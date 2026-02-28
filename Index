@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BUZZSYS</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getFirestore, collection, doc, addDoc, setDoc, updateDoc, deleteDoc,
+  onSnapshot, query, where, orderBy, serverTimestamp, getDocs
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// ─────────────────────────────────────────────────────────────
+//  🔧 PASTE YOUR FIREBASE CONFIG HERE (from Firebase Console)
+// ─────────────────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey:            "PASTE_apiKey_HERE",
+  authDomain:        "PASTE_authDomain_HERE",
+  projectId:         "PASTE_projectId_HERE",
+  storageBucket:     "PASTE_storageBucket_HERE",
+  messagingSenderId: "PASTE_messagingSenderId_HERE",
+  appId:             "PASTE_appId_HERE"
+};
+// ─────────────────────────────────────────────────────────────
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+// ── Helpers ──────────────────────────────────────────────────
+function genCode() {
+  const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:4}, () => c[Math.floor(Math.random()*c.length)]).join('');
+}
+function fmtTime(ts) {
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+function fmtDate(ts) {
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── State ─────────────────────────────────────────────────────
+let selectedSessionId = null;
+let activeTab = 'queue';
+let sessionUnsub = null, queueUnsub = null, logUnsub = null, sessionDetailUnsub = null;
+
+let audSession = null, audName = '', myEntryId = null, audBuzzed = false;
+let audQueueUnsub = null;
+
+// ── Page switching ─────────────────────────────────────────────
+window.showPage = function(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(name+'-page').classList.add('active');
+  if (name === 'audience' && !starsBuilt) buildStars();
+  if (name === 'admin') startAdminListeners();
+}
+
+// ── Stars ──────────────────────────────────────────────────────
+let starsBuilt = false;
+function buildStars() {
+  const sf = document.getElementById('starfield');
+  for (let i=0;i<90;i++) {
+    const s = document.createElement('div'); s.className='star';
+    s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${(Math.random()*4+2).toFixed(1)}s;--del:${(Math.random()*6).toFixed(1)}s;--a:${(Math.random()*0.1).toFixed(2)};--b:${(Math.random()*0.7+0.1).toFixed(2)}`;
+    sf.appendChild(s);
+  }
+  starsBuilt=true;
+}
+
+// ══════════════════════════════════════════
+//  ADMIN
+// ══════════════════════════════════════════
+function startAdminListeners() {
+  if (sessionUnsub) sessionUnsub();
+  sessionUnsub = onSnapshot(
+    query(collection(db,'sessions'), orderBy('createdAt','desc')),
+    snap => {
+      const sessions = snap.docs.map(d=>({id:d.id,...d.data()}));
+      renderSessions(sessions);
+      // Show config banner if no data after first snapshot
+      document.getElementById('config-banner').style.display='none';
+    },
+    err => {
+      console.error(err);
+      document.getElementById('config-banner').style.display='block';
+      document.getElementById('sessions-list').innerHTML='<div class="empty-state">⚠ Firebase error — check config</div>';
+    }
+  );
+}
+
+window.createSession = async function() {
+  const input = document.getElementById('new-session-name');
+  const name = input.value.trim(); if (!name) return;
+  const ref = await addDoc(collection(db,'sessions'), {
+    name, code: genCode(), createdAt: serverTimestamp(), active: true
+  });
+  input.value='';
+  selectSession(ref.id);
+}
+
+window.selectSession = function(id) {
+  selectedSessionId = id;
+  document.getElementById('tab-actions').style.display='flex';
+  startMainListeners();
+  document.querySelectorAll('.session-card').forEach(c=>c.classList.toggle('active',c.dataset.id===id));
+}
+
+window.closeSession = async function() {
+  if (!selectedSessionId) return;
+  await updateDoc(doc(db,'sessions',selectedSessionId),{active:false});
+}
+
+window.clearQueue = async function() {
+  if (!selectedSessionId) return;
+  const snap = await getDocs(query(collection(db,'queue'),where('sessionId','==',selectedSessionId)));
+  await Promise.all(snap.docs.map(d=>deleteDoc(doc(db,'queue',d.id))));
+}
+
+window.dismissEntry = async function(entryId) {
+  await deleteDoc(doc(db,'queue',entryId));
+  try { await updateDoc(doc(db,'log',entryId),{dismissed:true}); } catch{}
+}
+
+window.switchTab = function(tab) {
+  activeTab=tab;
+  document.getElementById('tab-queue').classList.toggle('active',tab==='queue');
+  document.getElementById('tab-log').classList.toggle('active',tab==='log');
+  startMainListeners();
+}
+
+function renderSessions(sessions) {
+  const el = document.getElementById('sessions-list');
+  if (!sessions.length) { el.innerHTML='<div class="empty-state">No sessions yet</div>'; return; }
+  el.innerHTML = sessions.map(s=>`
+    <div class="session-card ${selectedSessionId===s.id?'active':''}" data-id="${s.id}" onclick="selectSession('${s.id}')">
+      <div class="session-name">${esc(s.name)}</div>
+      <span class="session-code">${s.code}</span>
+      <div class="session-meta">${fmtDate(s.createdAt)} · ${s.active?'ACTIVE':'CLOSED'}</div>
+      <div class="session-meta" id="qcount-${s.id}" style="margin-top:4px">— in queue</div>
+    </div>`).join('');
+  sessions.forEach(s => {
+    onSnapshot(query(collection(db,'queue'),where('sessionId','==',s.id)), snap=>{
+      const el=document.getElementById('qcount-'+s.id);
+      if(el) el.textContent=snap.size+' in queue';
+    });
+  });
+}
+
+function startMainListeners() {
+  if (queueUnsub) { queueUnsub(); queueUnsub=null; }
+  if (logUnsub)   { logUnsub(); logUnsub=null; }
+  if (sessionDetailUnsub) { sessionDetailUnsub(); sessionDetailUnsub=null; }
+  if (!selectedSessionId) return;
+
+  const content = document.getElementById('admin-main-content');
+  const closeBtn = document.getElementById('close-session-btn');
+
+  sessionDetailUnsub = onSnapshot(doc(db,'sessions',selectedSessionId), snap=>{
+    if (!snap.exists()) return;
+    const s = snap.data();
+    closeBtn.style.display = s.active ? 'inline-block' : 'none';
+
+    if (activeTab==='queue') {
+      if (queueUnsub) { queueUnsub(); queueUnsub=null; }
+      queueUnsub = onSnapshot(
+        query(collection(db,'queue'),where('sessionId','==',selectedSessionId),orderBy('buzzedAt','asc')),
+        snap=>{
+          const entries=snap.docs.map(d=>({id:d.id,...d.data()}));
+          let html=`<div class="admin-main-title">Live Queue — ${esc(s.name)} [${s.code}] — ${entries.length} waiting</div>`;
+          if (!entries.length) html+='<div class="empty-state">Queue is empty</div>';
+          else html+='<div class="queue-grid">'+entries.map((e,i)=>`
+            <div class="queue-card">
+              <div class="queue-pos">#${i+1}</div>
+              <div class="queue-name">${esc(e.name)}</div>
+              <div class="queue-time">${fmtTime(e.buzzedAt)}</div>
+              <div class="queue-actions"><button class="admin-btn sm danger" onclick="dismissEntry('${e.id}')">Dismiss</button></div>
+            </div>`).join('')+'</div>';
+          content.innerHTML=html;
+        }
+      );
+    } else {
+      if (logUnsub) { logUnsub(); logUnsub=null; }
+      logUnsub = onSnapshot(
+        query(collection(db,'log'),where('sessionId','==',selectedSessionId),orderBy('buzzedAt','desc')),
+        snap=>{
+          const entries=snap.docs.map(d=>({id:d.id,...d.data()}));
+          let html=`<div class="admin-main-title">History — ${esc(s.name)} — ${entries.length} events</div>`;
+          if (!entries.length) html+='<div class="empty-state">No buzz events yet</div>';
+          else html+=`<table class="log-table">
+            <thead><tr><th>Pos</th><th>Participant</th><th>Date</th><th>Time</th><th>Status</th></tr></thead>
+            <tbody>${entries.map(e=>`<tr>
+              <td><span class="log-pos">#${e.position}</span></td>
+              <td style="color:var(--admin-text);font-weight:500">${esc(e.name)}</td>
+              <td style="color:var(--admin-muted)">${fmtDate(e.buzzedAt)}</td>
+              <td style="color:var(--admin-muted)">${fmtTime(e.buzzedAt)}</td>
+              <td>${e.dismissed?'<span class="dismissed-tag">Dismissed</span>':'<span class="active-tag">Active</span>'}</td>
+            </tr>`).join('')}</tbody></table>`;
+          content.innerHTML=html;
+        }
+      );
+    }
+  });
+}
+
+// ══════════════════════════════════════════
+//  AUDIENCE
+// ══════════════════════════════════════════
+window.joinSession = async function() {
+  const nameEl=document.getElementById('aud-name');
+  const codeEl=document.getElementById('aud-code');
+  const errEl=document.getElementById('join-error');
+  const name=nameEl.value.trim(), code=codeEl.value.toUpperCase();
+  errEl.style.display='none';
+  if (!name) { showErr('Enter your name'); return; }
+  if (code.length!==4) { showErr('Enter a 4-character code'); return; }
+  const snap=await getDocs(query(collection(db,'sessions'),where('code','==',code),where('active','==',true)));
+  if (snap.empty) { showErr('Invalid or inactive session code'); return; }
+  audSession={id:snap.docs[0].id,...snap.docs[0].data()};
+  audName=name; audBuzzed=false; myEntryId=null;
+  document.getElementById('join-card').style.display='none';
+  document.getElementById('buzz-card').style.display='flex';
+  document.getElementById('buzz-session-info').textContent=audSession.name+' · '+audSession.code;
+  resetBuzzBtn();
+}
+
+function showErr(msg) { const el=document.getElementById('join-error'); el.textContent=msg; el.style.display='block'; }
+
+function resetBuzzBtn() {
+  const btn=document.getElementById('buzz-btn');
+  btn.className='buzz-btn'; btn.textContent='BUZZ'; btn.disabled=false;
+  document.getElementById('buzz-status').textContent='Ready to buzz · '+audName;
+  document.getElementById('buzz-status').className='buzz-status ready';
+  document.getElementById('pos-display').style.display='none';
+}
+
+window.doBuzz = async function() {
+  if (audBuzzed||!audSession) return;
+  const qSnap=await getDocs(query(collection(db,'queue'),where('sessionId','==',audSession.id)));
+  const position=qSnap.size+1;
+  const entryData={ sessionId:audSession.id, name:audName, buzzedAt:serverTimestamp(), position, dismissed:false };
+  const qRef=await addDoc(collection(db,'queue'),entryData);
+  await setDoc(doc(db,'log',qRef.id),entryData);
+  myEntryId=qRef.id; audBuzzed=true;
+  const btn=document.getElementById('buzz-btn');
+  btn.className='buzz-btn buzzed'; btn.textContent='BUZZED!'; btn.disabled=true;
+  document.getElementById('buzz-status').textContent='In queue — hold on!';
+  document.getElementById('buzz-status').className='buzz-status in-queue';
+  document.getElementById('pos-display').style.display='block';
+  document.getElementById('pos-number').textContent='#'+position;
+  const flash=document.createElement('div'); flash.className='buzz-flash'; document.body.appendChild(flash);
+  setTimeout(()=>flash.remove(),600);
+  if (audQueueUnsub) audQueueUnsub();
+  audQueueUnsub=onSnapshot(
+    query(collection(db,'queue'),where('sessionId','==',audSession.id),orderBy('buzzedAt','asc')),
+    snap=>{
+      const entries=snap.docs.map(d=>({id:d.id,...d.data()}));
+      const myEntry=entries.find(e=>e.id===myEntryId);
+      if (!myEntry) {
+        const btn=document.getElementById('buzz-btn');
+        btn.className='buzz-btn dismissed-btn'; btn.textContent='DISMISSED'; btn.disabled=true;
+        document.getElementById('buzz-status').textContent='You have been dismissed';
+        document.getElementById('buzz-status').className='buzz-status out';
+        document.getElementById('pos-display').style.display='none';
+        audBuzzed=false; myEntryId=null;
+        if (audQueueUnsub){audQueueUnsub();audQueueUnsub=null;}
+        return;
+      }
+      const pos=entries.findIndex(e=>e.id===myEntryId)+1;
+      document.getElementById('pos-number').textContent='#'+pos;
+    }
+  );
+}
+
+window.leaveSession = function() {
+  if (audQueueUnsub){audQueueUnsub();audQueueUnsub=null;}
+  audSession=null; audName=''; myEntryId=null; audBuzzed=false;
+  document.getElementById('buzz-card').style.display='none';
+  document.getElementById('join-card').style.display='block';
+  document.getElementById('join-error').style.display='none';
+  document.getElementById('aud-name').value='';
+  document.getElementById('aud-code').value='';
+}
+
+// Init
+startAdminListeners();
+</script>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --admin-bg:#0a0c0f;--admin-panel:#111418;--admin-border:#1e2530;
+  --admin-accent:#00d4aa;--admin-text:#c8d4e0;--admin-muted:#4a5568;
+  --admin-danger:#ff4757;--aud-bg:#020408;--aud-glow:#00ffcc;
+  --aud-glow2:#ff00aa;--aud-glow3:#0088ff;--aud-text:#e0f0ff;
+}
+body{font-family:'IBM Plex Mono',monospace;background:var(--admin-bg);color:var(--admin-text);overflow-x:hidden}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#1e2530;border-radius:2px}
+.page{display:none;min-height:100vh}
+.page.active{display:flex;flex-direction:column}
+/* CONFIG BANNER */
+.config-banner{background:#1a0800;border-bottom:1px solid #ff6b00;color:#ff9944;font-size:11px;letter-spacing:1px;padding:10px 20px;text-align:center;display:none}
+/* ADMIN */
+#admin-page{background:var(--admin-bg)}
+.admin-topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 32px;border-bottom:1px solid var(--admin-border);background:var(--admin-panel);flex-shrink:0}
+.admin-logo{font-size:11px;font-weight:500;letter-spacing:4px;text-transform:uppercase;color:var(--admin-accent)}
+.admin-badge{font-size:10px;letter-spacing:2px;color:var(--admin-muted);text-transform:uppercase}
+.admin-body{flex:1;display:grid;grid-template-columns:320px 1fr;min-height:0;overflow:hidden}
+.admin-sidebar{border-right:1px solid var(--admin-border);display:flex;flex-direction:column;overflow:hidden;height:calc(100vh - 57px)}
+.admin-section{padding:20px;border-bottom:1px solid var(--admin-border)}
+.admin-section-title{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--admin-muted);margin-bottom:14px}
+.admin-input{width:100%;background:#0d1117;border:1px solid var(--admin-border);color:var(--admin-text);font-family:'IBM Plex Mono',monospace;font-size:13px;padding:10px 14px;outline:none;transition:border-color .2s}
+.admin-input:focus{border-color:var(--admin-accent)}
+.admin-btn{width:100%;padding:11px;background:transparent;border:1px solid var(--admin-accent);color:var(--admin-accent);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .2s;margin-top:8px}
+.admin-btn:hover{background:var(--admin-accent);color:#000}
+.admin-btn.danger{border-color:var(--admin-danger);color:var(--admin-danger)}
+.admin-btn.danger:hover{background:var(--admin-danger);color:#fff}
+.admin-btn.sm{width:auto;padding:6px 14px;font-size:9px;margin-top:0}
+.sessions-scroll{flex:1;overflow-y:auto;padding:14px}
+.session-card{background:#0d1117;border:1px solid var(--admin-border);padding:14px;margin-bottom:8px;cursor:pointer;transition:border-color .15s;position:relative}
+.session-card:hover,.session-card.active{border-color:var(--admin-accent)}
+.session-card.active::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--admin-accent)}
+.session-name{font-size:13px;color:var(--admin-text);margin-bottom:4px}
+.session-code{display:block;font-size:22px;letter-spacing:5px;color:var(--admin-accent);font-weight:700;margin:6px 0}
+.session-meta{font-size:10px;color:var(--admin-muted);letter-spacing:1px}
+.admin-main-area{display:flex;flex-direction:column;overflow:hidden}
+.nav-tabs{display:flex;align-items:center;border-bottom:1px solid var(--admin-border);padding:0 28px;flex-shrink:0;background:var(--admin-panel)}
+.nav-tab{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--admin-muted);padding:16px 18px;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;background:none;border-top:none;border-left:none;border-right:none;font-family:'IBM Plex Mono',monospace}
+.nav-tab.active{color:var(--admin-accent);border-bottom-color:var(--admin-accent)}
+.nav-tab:hover:not(.active){color:var(--admin-text)}
+.tab-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
+.admin-main{padding:28px 32px;overflow-y:auto;flex:1}
+.admin-main-title{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--admin-muted);margin-bottom:20px}
+.queue-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.queue-card{background:var(--admin-panel);border:1px solid var(--admin-border);padding:16px;position:relative}
+.queue-pos{font-size:34px;font-weight:700;color:var(--admin-accent);opacity:.25;position:absolute;top:8px;right:12px}
+.queue-name{font-size:14px;color:var(--admin-text);margin-bottom:4px}
+.queue-time{font-size:10px;color:var(--admin-muted);letter-spacing:1px}
+.queue-actions{display:flex;gap:8px;margin-top:12px}
+.log-table{width:100%;border-collapse:collapse}
+.log-table th{text-align:left;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--admin-muted);padding:8px 12px;border-bottom:1px solid var(--admin-border)}
+.log-table td{padding:10px 12px;font-size:12px;border-bottom:1px solid #0d1117}
+.log-table tr:hover td{background:#0d1117}
+.log-pos{display:inline-block;width:26px;height:26px;line-height:26px;text-align:center;font-size:10px;background:#1a2030;color:var(--admin-accent);font-weight:700}
+.dismissed-tag{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--admin-muted);padding:2px 8px;border:1px solid var(--admin-border)}
+.active-tag{color:var(--admin-accent);font-size:10px;letter-spacing:1px}
+.empty-state{text-align:center;padding:56px 24px;color:var(--admin-muted);font-size:11px;letter-spacing:2px;text-transform:uppercase}
+.switch-btn{font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:8px 16px;cursor:pointer;transition:all .2s;font-family:'IBM Plex Mono',monospace;background:transparent}
+.switch-btn.to-aud{border:1px solid var(--admin-border);color:var(--admin-muted)}
+.switch-btn.to-aud:hover{border-color:var(--admin-accent);color:var(--admin-accent)}
+.switch-btn.to-admin{border:1px solid rgba(0,255,204,.2);color:rgba(0,255,204,.4);position:fixed;top:16px;right:16px;z-index:50}
+.switch-btn.to-admin:hover{border-color:var(--aud-glow);color:var(--aud-glow)}
+/* AUDIENCE */
+#audience-page{background:var(--aud-bg);align-items:center;justify-content:center;position:relative;overflow:hidden;font-family:'Orbitron',sans-serif}
+.starfield{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.star{position:absolute;width:2px;height:2px;background:white;border-radius:50%;animation:twinkle var(--d) var(--del) infinite alternate}
+@keyframes twinkle{from{opacity:var(--a);transform:scale(1)}to{opacity:var(--b);transform:scale(1.6)}}
+.arena-floor{position:fixed;bottom:0;left:0;right:0;height:45vh;perspective:600px;pointer-events:none}
+.arena-floor-inner{width:100%;height:100%;background-image:linear-gradient(rgba(0,255,204,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,204,.07) 1px,transparent 1px);background-size:60px 60px;transform:rotateX(70deg);transform-origin:bottom center;animation:gridPulse 4s ease-in-out infinite}
+@keyframes gridPulse{0%,100%{opacity:.5}50%{opacity:1}}
+.glow-ring{position:fixed;border-radius:50%;border:1px solid;pointer-events:none;animation:ringExpand var(--dur) var(--del) ease-out infinite;opacity:0;left:50%;top:50%}
+@keyframes ringExpand{0%{transform:translate(-50%,-50%) scale(.2);opacity:.6}100%{transform:translate(-50%,-50%) scale(3.5);opacity:0}}
+.aud-content{position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;gap:24px;padding:24px;width:100%;max-width:520px}
+.aud-title{font-size:clamp(28px,7vw,54px);font-weight:900;letter-spacing:8px;text-transform:uppercase;background:linear-gradient(135deg,var(--aud-glow),var(--aud-glow3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center;filter:drop-shadow(0 0 30px rgba(0,255,204,.4));animation:titleFloat 3s ease-in-out infinite}
+@keyframes titleFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.aud-card{width:100%;background:rgba(0,20,40,.75);border:1px solid rgba(0,255,204,.2);backdrop-filter:blur(20px);padding:28px;position:relative;overflow:hidden}
+.aud-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--aud-glow),transparent);animation:scanLine 2s linear infinite}
+@keyframes scanLine{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.aud-label{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(0,255,204,.4);font-family:'Share Tech Mono',monospace;margin-bottom:8px}
+.aud-input{width:100%;background:rgba(0,255,204,.05);border:1px solid rgba(0,255,204,.3);color:var(--aud-glow);font-family:'Orbitron',sans-serif;font-size:28px;font-weight:700;letter-spacing:10px;text-align:center;text-transform:uppercase;padding:14px;outline:none;transition:all .3s;margin-bottom:18px}
+.aud-input::placeholder{color:rgba(0,255,204,.2);letter-spacing:3px;font-size:12px;font-weight:400}
+.aud-input:focus{border-color:var(--aud-glow);box-shadow:0 0 40px rgba(0,255,204,.12),inset 0 0 20px rgba(0,255,204,.04)}
+.aud-input.name-input{font-size:14px;letter-spacing:2px;color:var(--aud-text);font-family:'Share Tech Mono',monospace}
+.aud-join-btn{width:100%;background:transparent;border:2px solid var(--aud-glow);color:var(--aud-glow);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:4px;text-transform:uppercase;padding:16px;cursor:pointer;transition:all .3s;position:relative;overflow:hidden;margin-top:4px}
+.aud-join-btn:hover{background:rgba(0,255,204,.08);box-shadow:0 0 40px rgba(0,255,204,.25)}
+.error-msg{color:var(--admin-danger);font-size:11px;letter-spacing:1px;margin-top:8px;font-family:'Share Tech Mono',monospace}
+.buzz-zone{display:flex;flex-direction:column;align-items:center;gap:18px}
+.aud-session-info{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(0,255,204,.3);font-family:'Share Tech Mono',monospace;text-align:center}
+.buzz-btn-wrap{position:relative;width:200px;height:200px;display:flex;align-items:center;justify-content:center}
+.buzz-ring{position:absolute;inset:0;border-radius:50%;border:2px solid var(--aud-glow);opacity:.2;animation:pulse-ring 2s ease-out infinite}
+.buzz-ring:nth-child(2){animation-delay:.66s}.buzz-ring:nth-child(3){animation-delay:1.33s}
+@keyframes pulse-ring{0%{transform:scale(.8);opacity:.4}100%{transform:scale(1.55);opacity:0}}
+.buzz-btn{width:158px;height:158px;border-radius:50%;background:radial-gradient(circle at 38% 32%,rgba(0,255,204,.28),rgba(0,40,60,.92) 70%);border:3px solid var(--aud-glow);color:var(--aud-glow);font-family:'Orbitron',sans-serif;font-size:13px;font-weight:900;letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:all .15s;box-shadow:0 0 60px rgba(0,255,204,.18),inset 0 0 40px rgba(0,255,204,.05);z-index:1;position:relative}
+.buzz-btn:hover:not(:disabled){box-shadow:0 0 100px rgba(0,255,204,.4),inset 0 0 40px rgba(0,255,204,.1);transform:scale(1.05)}
+.buzz-btn:active:not(:disabled){transform:scale(.96)}
+.buzz-btn.buzzed{background:radial-gradient(circle at 38% 32%,rgba(255,0,170,.35),rgba(60,0,40,.92) 70%);border-color:var(--aud-glow2);color:var(--aud-glow2);box-shadow:0 0 80px rgba(255,0,170,.3)}
+.buzz-btn.dismissed-btn{background:radial-gradient(circle at 38% 32%,rgba(60,60,60,.2),rgba(15,15,15,.92) 70%);border-color:#2a2a2a;color:#3a3a3a;cursor:not-allowed;box-shadow:none}
+.aud-pos-big{font-size:80px;font-weight:900;line-height:1;background:linear-gradient(135deg,var(--aud-glow),var(--aud-glow3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 30px rgba(0,255,204,.5));animation:posGlow 2s ease-in-out infinite}
+@keyframes posGlow{0%,100%{filter:drop-shadow(0 0 20px rgba(0,255,204,.4))}50%{filter:drop-shadow(0 0 50px rgba(0,255,204,.8))}}
+.pos-label{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(0,255,204,.4);font-family:'Share Tech Mono',monospace}
+.buzz-status{font-size:10px;letter-spacing:2px;text-transform:uppercase;font-family:'Share Tech Mono',monospace}
+.buzz-status.ready{color:rgba(0,255,204,.5)}.buzz-status.in-queue{color:var(--aud-glow2)}.buzz-status.out{color:#444}
+.leave-btn{background:transparent;border:1px solid rgba(255,0,170,.25);color:rgba(255,0,170,.4);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:8px 22px;cursor:pointer;transition:all .2s}
+.leave-btn:hover{border-color:var(--aud-glow2);color:var(--aud-glow2)}
+.buzz-flash{position:fixed;inset:0;pointer-events:none;z-index:200;background:var(--aud-glow);animation:flashAnim .5s ease-out forwards}
+@keyframes flashAnim{0%{opacity:0}15%{opacity:.25}100%{opacity:0}}
+</style>
+</head>
+<body>
+
+<div class="config-banner" id="config-banner">
+  ⚠ Firebase not configured — paste your Firebase config values into index.html. See SETUP.md for step-by-step instructions.
+</div>
+
+<!-- ADMIN PAGE -->
+<div id="admin-page" class="page active">
+  <div class="admin-topbar">
+    <span class="admin-logo">BUZZSYS // ADMIN</span>
+    <span class="admin-badge">Control Panel</span>
+    <button class="switch-btn to-aud" onclick="showPage('audience')">→ Audience View</button>
+  </div>
+  <div class="admin-body">
+    <div class="admin-sidebar">
+      <div class="admin-section">
+        <div class="admin-section-title">New Session</div>
+        <input class="admin-input" id="new-session-name" placeholder="Session name..." onkeydown="if(event.key==='Enter') createSession()" />
+        <button class="admin-btn" onclick="createSession()">Create Session</button>
+      </div>
+      <div class="admin-section" style="flex:1;overflow:hidden;display:flex;flex-direction:column;padding-bottom:0">
+        <div class="admin-section-title">Sessions</div>
+        <div class="sessions-scroll" id="sessions-list">
+          <div class="empty-state">Connecting to Firebase…</div>
+        </div>
+      </div>
+    </div>
+    <div class="admin-main-area">
+      <div class="nav-tabs">
+        <button class="nav-tab active" id="tab-queue" onclick="switchTab('queue')">Live Queue</button>
+        <button class="nav-tab" id="tab-log" onclick="switchTab('log')">History Log</button>
+        <div class="tab-actions" id="tab-actions" style="display:none">
+          <button class="admin-btn sm" onclick="clearQueue()">Clear Queue</button>
+          <button class="admin-btn sm danger" id="close-session-btn" onclick="closeSession()">Close Session</button>
+        </div>
+      </div>
+      <div class="admin-main" id="admin-main-content">
+        <div class="empty-state" style="margin-top:80px">Select or create a session to begin</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AUDIENCE PAGE -->
+<div id="audience-page" class="page">
+  <div class="starfield" id="starfield"></div>
+  <div class="arena-floor"><div class="arena-floor-inner"></div></div>
+  <div class="glow-ring" style="width:280px;height:280px;border-color:var(--aud-glow);--dur:4s;--del:0s;"></div>
+  <div class="glow-ring" style="width:280px;height:280px;border-color:var(--aud-glow3);--dur:5.5s;--del:1.5s;"></div>
+  <div class="glow-ring" style="width:280px;height:280px;border-color:var(--aud-glow2);--dur:7s;--del:3s;"></div>
+  <button class="switch-btn to-admin" onclick="showPage('admin')">Admin →</button>
+  <div class="aud-content">
+    <div class="aud-title">BUZZER</div>
+    <div class="aud-card" id="join-card">
+      <div class="aud-label">Your Name</div>
+      <input class="aud-input name-input" id="aud-name" placeholder="Enter your name..." onkeydown="if(event.key==='Enter') joinSession()" />
+      <div class="aud-label">Session Code</div>
+      <input class="aud-input" id="aud-code" placeholder="XXXX" maxlength="4" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter') joinSession()" />
+      <div class="error-msg" id="join-error" style="display:none"></div>
+      <button class="aud-join-btn" onclick="joinSession()">Join Session</button>
+    </div>
+    <div class="buzz-zone" id="buzz-card" style="display:none">
+      <div class="aud-session-info" id="buzz-session-info"></div>
+      <div class="buzz-btn-wrap">
+        <div class="buzz-ring"></div><div class="buzz-ring"></div><div class="buzz-ring"></div>
+        <button class="buzz-btn" id="buzz-btn" onclick="doBuzz()">BUZZ</button>
+      </div>
+      <div id="pos-display" style="display:none;text-align:center">
+        <div class="aud-pos-big" id="pos-number">#1</div>
+        <div class="pos-label">your position in queue</div>
+      </div>
+      <div class="buzz-status ready" id="buzz-status">Ready to buzz</div>
+      <button class="leave-btn" onclick="leaveSession()">Leave Session</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
