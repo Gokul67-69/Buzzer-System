@@ -17,12 +17,13 @@ import {
 //  🔧 PASTE YOUR FIREBASE CONFIG HERE (from Firebase Console)
 // ─────────────────────────────────────────────────────────────
 const firebaseConfig = {
-  apiKey:            "PASTE_apiKey_HERE",
-  authDomain:        "PASTE_authDomain_HERE",
-  projectId:         "PASTE_projectId_HERE",
-  storageBucket:     "PASTE_storageBucket_HERE",
-  messagingSenderId: "PASTE_messagingSenderId_HERE",
-  appId:             "PASTE_appId_HERE"
+  apiKey: "AIzaSyBeTlvIU2lPUNVwKFSr7KqezCC9JJbJbsY",
+  authDomain: "buzzer-f2b72.firebaseapp.com",
+  projectId: "buzzer-f2b72",
+  storageBucket: "buzzer-f2b72.firebasestorage.app",
+  messagingSenderId: "942193699731",
+  appId: "1:942193699731:web:a704201720aed264671666",
+  measurementId: "G-MD6NTSKD9C"
 };
 // ─────────────────────────────────────────────────────────────
 
