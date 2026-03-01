@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>BuzzSys</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
-
+  <!-- QR code library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script>
@@ -18,7 +20,6 @@
       appId:             "1:942193699731:web:a704201720aed264671666"
     });
     const db = firebase.firestore();
-    db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
   </script>
 
 <style>
@@ -35,7 +36,7 @@ body{font-family:'IBM Plex Mono',monospace;background:var(--ab);color:var(--at);
 .page{display:none;min-height:100vh;flex-direction:column}
 .page.active{display:flex}
 
-/* ADMIN */
+/* ── ADMIN ───────────────────────────────────── */
 #pg-admin{background:var(--ab)}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;background:var(--ap);border-bottom:1px solid var(--abr);flex-shrink:0}
 .logo{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--ac);font-weight:500}
@@ -80,17 +81,32 @@ body{font-family:'IBM Plex Mono',monospace;background:var(--ab);color:var(--at);
 .lbadge{display:inline-block;width:24px;height:24px;line-height:24px;text-align:center;background:#131d2a;color:var(--ac);font-size:10px;font-weight:700}
 .tdis{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--am);padding:2px 7px;border:1px solid var(--abr)}
 .tact{font-size:10px;color:var(--ac);letter-spacing:1px}
-.nsw{font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:7px 14px;cursor:pointer;font-family:'IBM Plex Mono',monospace;background:transparent;transition:all .2s}
-.nsd{border:1px solid var(--abr);color:var(--am)}
-.nsd:hover{border-color:var(--ac);color:var(--ac)}
-.nsl{border:1px solid rgba(0,255,200,.2);color:rgba(0,255,200,.4);position:fixed;top:14px;right:14px;z-index:100}
-.nsl:hover{border-color:var(--qc);color:var(--qc)}
 .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle}
 .dot.live{background:var(--ac);animation:dp 1.5s ease-in-out infinite}
 @keyframes dp{0%,100%{opacity:1}50%{opacity:.3}}
 .dot.closed{background:var(--am)}
 
-/* AUDIENCE */
+/* QR Panel */
+.qr-panel{
+  background:var(--ap);border:1px solid var(--abr);
+  padding:20px;text-align:center;
+}
+.qr-panel-title{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--am);margin-bottom:14px}
+.qr-wrap{
+  display:inline-block;padding:12px;background:#fff;
+  margin-bottom:12px;
+}
+.qr-wrap canvas,.qr-wrap img{display:block}
+.qr-url{
+  font-size:9px;color:var(--am);letter-spacing:1px;
+  word-break:break-all;margin-top:6px;
+}
+.qr-hint{
+  font-size:10px;color:var(--ac);letter-spacing:1px;
+  margin-top:4px;
+}
+
+/* ── AUDIENCE ────────────────────────────────── */
 #pg-audience{background:var(--qb);align-items:center;justify-content:center;position:relative;overflow:hidden;font-family:'Orbitron',sans-serif}
 #stars{position:fixed;inset:0;pointer-events:none}
 .star{position:absolute;border-radius:50%;background:#fff;animation:sb var(--sd) var(--ss) infinite alternate ease-in-out}
@@ -114,19 +130,7 @@ body{font-family:'IBM Plex Mono',monospace;background:var(--ab);color:var(--at);
 .qjoin{width:100%;padding:15px;background:transparent;border:2px solid var(--qc);color:var(--qc);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:4px;text-transform:uppercase;cursor:pointer;transition:all .25s;margin-top:2px}
 .qjoin:hover:not(:disabled){background:rgba(0,255,200,.08);box-shadow:0 0 36px rgba(0,255,200,.22)}
 .qjoin:disabled{opacity:.5;cursor:not-allowed}
-
-/* Error box - more visible */
-.qerr{
-  display:none;
-  margin-top:10px;padding:10px 14px;
-  background:rgba(240,64,74,.12);
-  border:1px solid rgba(240,64,74,.4);
-  color:#f0606a;
-  font-size:11px;letter-spacing:.5px;
-  font-family:'Share Tech Mono',monospace;
-  line-height:1.5;
-}
-
+.qerr{display:none;margin-top:10px;padding:10px 14px;background:rgba(240,64,74,.12);border:1px solid rgba(240,64,74,.4);color:#f0606a;font-size:11px;letter-spacing:.5px;font-family:'Share Tech Mono',monospace;line-height:1.5}
 .bzzone{display:flex;flex-direction:column;align-items:center;gap:16px}
 .bzs{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(0,255,200,.3);font-family:'Share Tech Mono',monospace}
 .bzw{position:relative;width:190px;height:190px;display:flex;align-items:center;justify-content:center}
@@ -145,11 +149,26 @@ body{font-family:'IBM Plex Mono',monospace;background:var(--ab);color:var(--at);
 .bzst{font-size:10px;letter-spacing:2px;text-transform:uppercase;font-family:'Share Tech Mono',monospace}
 .bzst.idle{color:rgba(0,255,200,.45)}
 .bzst.wait{color:var(--qp)}
-.bzst.out{color:#333}
+.bzst.out{color:#555}
 .bzlv{background:transparent;border:1px solid rgba(255,0,170,.22);color:rgba(255,0,170,.38);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:7px 20px;cursor:pointer;transition:all .2s}
 .bzlv:hover{border-color:var(--qp);color:var(--qp)}
 .bzfl{position:fixed;inset:0;z-index:500;pointer-events:none;background:var(--qc);animation:fout .55s ease-out forwards}
 @keyframes fout{0%{opacity:0}12%{opacity:.22}100%{opacity:0}}
+
+/* Session ended overlay for audience */
+.sess-ended{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:rgba(1,5,9,.95);
+  align-items:center;justify-content:center;
+  flex-direction:column;gap:16px;
+  font-family:'Orbitron',sans-serif;
+  text-align:center;padding:32px;
+}
+.sess-ended.show{display:flex}
+.sess-ended-title{font-size:22px;font-weight:900;letter-spacing:4px;color:var(--qp)}
+.sess-ended-sub{font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.4);font-family:'Share Tech Mono',monospace}
+.sess-ended-btn{margin-top:8px;padding:12px 28px;background:transparent;border:2px solid var(--qc);color:var(--qc);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:all .25s}
+.sess-ended-btn:hover{background:rgba(0,255,200,.1)}
 </style>
 </head>
 <body>
@@ -159,7 +178,6 @@ body{font-family:'IBM Plex Mono',monospace;background:var(--ab);color:var(--at);
   <div class="topbar">
     <span class="logo">BUZZSYS // ADMIN</span>
     <span class="sub">Control Panel</span>
-    <button class="nsw nsd" onclick="goTo('audience')">→ Audience View</button>
   </div>
   <div class="abody">
     <div class="sidebar">
@@ -177,9 +195,10 @@ body{font-family:'IBM Plex Mono',monospace;background:var(--ab);color:var(--at);
       <div class="tabs">
         <button class="tab on" id="tq" onclick="setTab('queue')">Live Queue</button>
         <button class="tab"    id="tl" onclick="setTab('log')">History Log</button>
+        <button class="tab"    id="tqr" onclick="setTab('qr')">QR Code</button>
         <div class="tabr" id="tabr" style="display:none">
           <button class="abtn s" onclick="clearQ()">Clear Queue</button>
-          <button class="abtn s r" id="btnclose" onclick="closeSess()">Close Session</button>
+          <button class="abtn s r" id="btnclose" onclick="closeSess()">End Session</button>
         </div>
       </div>
       <div class="acontent" id="content">
@@ -196,7 +215,6 @@ body{font-family:'IBM Plex Mono',monospace;background:var(--ab);color:var(--at);
   <div class="ring" style="width:260px;height:260px;border-color:var(--qc);--rd:4.5s;--rs:0s"></div>
   <div class="ring" style="width:260px;height:260px;border-color:var(--ql);--rd:5.8s;--rs:1.4s"></div>
   <div class="ring" style="width:260px;height:260px;border-color:var(--qp);--rd:7.2s;--rs:2.8s"></div>
-  <button class="nsw nsl" onclick="goTo('admin')">Admin →</button>
 
   <div class="qwrap">
     <div class="qtitle">BUZZER</div>
@@ -225,10 +243,17 @@ body{font-family:'IBM Plex Mono',monospace;background:var(--ab);color:var(--at);
       <button class="bzlv" onclick="audLeave()">Leave Session</button>
     </div>
   </div>
+
+  <!-- Session ended overlay -->
+  <div class="sess-ended" id="sess-ended">
+    <div class="sess-ended-title">SESSION ENDED</div>
+    <div class="sess-ended-sub">The host has closed this session</div>
+    <button class="sess-ended-btn" onclick="audLeave()">Join Another Session</button>
+  </div>
 </div>
 
 <script>
-/* ── Helpers ─────────────────────────────────────────────── */
+/* ── Helpers ─────────────────────────────── */
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function genCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<4;i++)s+=c[Math.floor(Math.random()*c.length)];return s}
 function tsMs(ts){if(!ts)return 0;return ts.toMillis?ts.toMillis():Number(ts)}
@@ -236,7 +261,13 @@ function fmtT(ts){if(!ts)return'—';const d=ts.toDate?ts.toDate():new Date(ts);
 function fmtD(ts){if(!ts)return'—';const d=ts.toDate?ts.toDate():new Date(ts);return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
 const TS=()=>firebase.firestore.FieldValue.serverTimestamp();
 
-/* ── Router ──────────────────────────────────────────────── */
+/* ── Device detection: mobile always gets audience ── */
+function isMobile(){return window.innerWidth<=768||/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)}
+
+/* ── URL param helper: ?code=XXXX&name=John ── */
+function getParam(k){return new URLSearchParams(window.location.search).get(k)||''}
+
+/* ── Router ──────────────────────────────── */
 let starsOk=false;
 function goTo(name){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -245,7 +276,7 @@ function goTo(name){
   if(name==='admin')adminBoot();
 }
 
-/* ── Stars ───────────────────────────────────────────────── */
+/* ── Stars ───────────────────────────────── */
 function buildStars(){
   const w=document.getElementById('stars');
   for(let i=0;i<100;i++){
@@ -257,12 +288,15 @@ function buildStars(){
   starsOk=true;
 }
 
-/* ══════════════════════════════════════════════════════════
+/* ════════════════════════════════════════════
    ADMIN
-══════════════════════════════════════════════════════════ */
+════════════════════════════════════════════ */
 const A={selId:null,tab:'queue',_subs:[]};
 function killAll(){A._subs.forEach(fn=>{try{fn()}catch{}});A._subs=[];}
 function reg(u){if(u)A._subs.push(u);}
+
+// Track sessions created this browser tab so we can delete on close
+const mySessionIds=new Set();
 
 function adminBoot(){
   killAll();
@@ -297,8 +331,12 @@ function renderSess(list){
 async function createSess(){
   const inp=document.getElementById('inp');
   const name=inp.value.trim();if(!name)return;
-  const ref=await db.collection('sessions').add({name,code:genCode(),createdAt:TS(),active:true});
-  inp.value='';selSess(ref.id);
+  const ref=await db.collection('sessions').add({
+    name,code:genCode(),createdAt:TS(),active:true
+  });
+  inp.value='';
+  mySessionIds.add(ref.id); // track so we auto-delete on tab close
+  selSess(ref.id);
 }
 
 function selSess(id){
@@ -312,12 +350,16 @@ function setTab(t){
   A.tab=t;
   document.getElementById('tq').classList.toggle('on',t==='queue');
   document.getElementById('tl').classList.toggle('on',t==='log');
+  document.getElementById('tqr').classList.toggle('on',t==='qr');
   startContent();
 }
 
 async function closeSess(){
   if(!A.selId)return;
   await db.collection('sessions').doc(A.selId).update({active:false});
+  // Also clear the queue
+  const snap=await db.collection('queue').where('sessionId','==',A.selId).get();
+  const b=db.batch();snap.forEach(d=>b.delete(d.ref));await b.commit();
 }
 
 async function clearQ(){
@@ -331,7 +373,49 @@ async function dismiss(id){
   try{await db.collection('log').doc(id).update({dismissed:true});}catch{}
 }
 
-/* Content listener — separate handle so it doesn't cancel session listener */
+/* Auto-delete sessions when admin closes the tab */
+async function cleanupMySessions(){
+  const promises=[];
+  for(const id of mySessionIds){
+    // Mark inactive and delete queue entries
+    promises.push(
+      db.collection('sessions').doc(id).update({active:false}).catch(()=>{})
+    );
+    promises.push(
+      db.collection('queue').where('sessionId','==',id).get()
+        .then(snap=>{const b=db.batch();snap.forEach(d=>b.delete(d.ref));return b.commit();})
+        .catch(()=>{})
+    );
+  }
+  await Promise.all(promises);
+}
+
+window.addEventListener('beforeunload',()=>{
+  // Synchronous beacon approach for reliability on tab close
+  if(mySessionIds.size===0)return;
+  // Mark sessions inactive synchronously using sendBeacon isn't possible with Firestore,
+  // so we use the best available: fire-and-forget + keepalive
+  for(const id of mySessionIds){
+    db.collection('sessions').doc(id).update({active:false}).catch(()=>{});
+  }
+});
+
+// Also handle visibility change (phone screen off / tab hidden)
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden'&&mySessionIds.size>0){
+    for(const id of mySessionIds){
+      db.collection('sessions').doc(id).update({active:false}).catch(()=>{});
+    }
+  }
+  // When tab becomes visible again, re-activate if we're still here
+  if(document.visibilityState==='visible'&&mySessionIds.size>0){
+    for(const id of mySessionIds){
+      db.collection('sessions').doc(id).update({active:true}).catch(()=>{});
+    }
+  }
+});
+
+/* Content listener */
 let _cu=null;
 function stopContent(){if(_cu){try{_cu()}catch{}_cu=null;}}
 
@@ -347,10 +431,14 @@ function startContent(){
     const sess=sdoc.data();
     document.getElementById('btnclose').style.display=sess.active?'inline-block':'none';
 
+    if(A.tab==='qr'){
+      renderQR(sess,sid);
+      return;
+    }
+
     const col=A.tab==='queue'?'queue':'log';
     const dir=A.tab==='queue'?1:-1;
 
-    // Simple .where() only — no .orderBy() = no composite index needed
     _cu=db.collection(col).where('sessionId','==',sid)
       .onSnapshot(snap=>{
         const rows=snap.docs
@@ -390,34 +478,51 @@ function startContent(){
         }
       },err=>{
         content.innerHTML='<div class="empty">⚠ Error: '+esc(err.message)+'</div>';
-        console.error('content listener:',err);
       });
   });
 
-  // Watch session doc for live active-state changes
   reg(db.collection('sessions').doc(sid).onSnapshot(sd=>{
     if(!sd.exists)return;
     document.getElementById('btnclose').style.display=sd.data().active?'inline-block':'none';
   }));
 }
 
-/* ══════════════════════════════════════════════════════════
+/* Generate QR code for a session */
+function renderQR(sess,sid){
+  const content=document.getElementById('content');
+  // Build URL with code pre-filled as param
+  const baseUrl=window.location.origin+window.location.pathname;
+  const joinUrl=baseUrl+'?code='+sess.code;
+
+  content.innerHTML=`
+    <div class="ct">QR Code — ${esc(sess.name)} [${esc(sess.code)}]</div>
+    <div class="qr-panel">
+      <div class="qr-panel-title">Scan to join session instantly</div>
+      <div class="qr-wrap" id="qrdiv"></div>
+      <div class="qr-hint">Participants just need to enter their name after scanning</div>
+      <div class="qr-url">${esc(joinUrl)}</div>
+    </div>`;
+
+  // Generate QR code
+  new QRCode(document.getElementById('qrdiv'),{
+    text: joinUrl,
+    width: 200,
+    height: 200,
+    colorDark: '#000000',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.H
+  });
+}
+
+/* ════════════════════════════════════════════
    AUDIENCE
-   
-   KEY FIX: audJoin does TWO separate queries:
-   1. First searches by code only (no active filter)
-      so we can give a specific error if session exists
-      but is closed, vs code being completely wrong
-   2. Then checks active field client-side
-══════════════════════════════════════════════════════════ */
-const AUD={sess:null,name:'',eid:null,buzzed:false,_sub:null};
+════════════════════════════════════════════ */
+const AUD={sess:null,name:'',eid:null,buzzed:false,_sub:null,_sessSub:null};
 
 function audErr(msg){
   const el=document.getElementById('aerr');
-  el.textContent=msg;
-  el.style.display=msg?'block':'none';
+  el.textContent=msg;el.style.display=msg?'block':'none';
 }
-
 function setJoinBtn(text,disabled){
   const b=document.getElementById('jbtn');
   b.textContent=text;b.disabled=disabled;
@@ -434,42 +539,49 @@ async function audJoin(){
   setJoinBtn('Checking…',true);
 
   try{
-    // Search by code only first — gives us better error messages
     const snap=await db.collection('sessions').where('code','==',code).get();
 
     if(snap.empty){
-      // Code doesn't exist at all
       audErr('No session found with code "'+code+'". Check the code and try again.');
-      setJoinBtn('Join Session',false);
-      return;
+      setJoinBtn('Join Session',false);return;
     }
 
-    // Code exists — check if active
     const activeDocs=snap.docs.filter(d=>d.data().active===true);
     if(!activeDocs.length){
-      audErr('Session "'+code+'" has been closed by the host. Ask them to create a new session.');
-      setJoinBtn('Join Session',false);
-      return;
+      audErr('Session "'+code+'" has been closed by the host.');
+      setJoinBtn('Join Session',false);return;
     }
 
-    // All good — join!
     AUD.sess={id:activeDocs[0].id,...activeDocs[0].data()};
     AUD.name=name;AUD.buzzed=false;AUD.eid=null;
 
     document.getElementById('jpanel').style.display='none';
     document.getElementById('bpanel').style.display='flex';
     document.getElementById('bslbl').textContent=AUD.sess.name+' · '+AUD.sess.code;
+    document.getElementById('sess-ended').classList.remove('show');
     resetBuzz();
 
+    // Watch for session being closed by admin
+    if(AUD._sessSub){try{AUD._sessSub();}catch{}AUD._sessSub=null;}
+    AUD._sessSub=db.collection('sessions').doc(AUD.sess.id).onSnapshot(sd=>{
+      if(!sd.exists)return;
+      if(!sd.data().active){
+        // Session ended — show overlay
+        document.getElementById('sess-ended').classList.add('show');
+        // Stop buzz listener
+        if(AUD._sub){try{AUD._sub();}catch{}AUD._sub=null;}
+        AUD.buzzed=false;AUD.eid=null;
+      }
+    });
+
   }catch(e){
-    console.error('audJoin error:',e);
-    // Give specific error messages based on error type
+    console.error('audJoin:',e);
     if(e.code==='permission-denied'||String(e.message).includes('permission')){
-      audErr('⚠ Database access denied.\n\nThe host needs to fix Firestore Rules:\nFirebase Console → Firestore → Rules → set allow read, write: if true → Publish');
-    }else if(e.code==='unavailable'||String(e.message).includes('network')){
-      audErr('⚠ No internet connection. Please check your network and try again.');
+      audErr('⚠ Permission denied. Ask host to fix Firestore Rules.');
+    }else if(e.code==='unavailable'){
+      audErr('⚠ No internet connection. Check your network.');
     }else{
-      audErr('⚠ Error: '+e.message);
+      audErr('⚠ '+e.message);
     }
     setJoinBtn('Join Session',false);
   }
@@ -500,12 +612,10 @@ async function audBuzz(){
       dismissed:false,
     };
 
-    // Write and wait for confirmation before starting listener
     const ref=await db.collection('queue').add(entry);
     await db.collection('log').doc(ref.id).set(entry);
 
-    AUD.eid=ref.id;
-    AUD.buzzed=true;
+    AUD.eid=ref.id;AUD.buzzed=true;
 
     b.className='bzb fired';b.textContent='BUZZED!';b.disabled=true;
     document.getElementById('posblk').style.display='block';
@@ -516,7 +626,6 @@ async function audBuzz(){
     const fl=document.createElement('div');fl.className='bzfl';
     document.body.appendChild(fl);setTimeout(()=>fl.remove(),600);
 
-    // Start queue watcher AFTER write confirmed
     if(AUD._sub){try{AUD._sub();}catch{}AUD._sub=null;}
     AUD._sub=db.collection('queue')
       .where('sessionId','==',AUD.sess.id)
@@ -527,21 +636,19 @@ async function audBuzz(){
 
         const mine=all.find(e=>e.id===AUD.eid);
         if(!mine){
-          // Dismissed or cleared by admin
+          // Dismissed or cleared — let them buzz again
           if(AUD._sub){try{AUD._sub();}catch{}AUD._sub=null;}
           AUD.buzzed=false;AUD.eid=null;
-          // Show dismissed message briefly
           b.className='bzb gone';b.textContent='DISMISSED';b.disabled=true;
           document.getElementById('posblk').style.display='none';
           const st=document.getElementById('bzst');
-          st.textContent='Dismissed — buzzing again in 2s...';st.className='bzst out';
-          // After 2 seconds reset fully so they can buzz again
-          setTimeout(()=>{ resetBuzz(); }, 2000);
+          st.textContent='Dismissed — buzzing again in 2s…';st.className='bzst out';
+          setTimeout(()=>resetBuzz(),2000);
           return;
         }
         const idx=all.findIndex(e=>e.id===AUD.eid)+1;
         document.getElementById('posnum').textContent='#'+idx;
-      },err=>{console.error('audience queue watch:',err);});
+      },err=>console.error('queue watch:',err));
 
   }catch(e){
     console.error('buzz error:',e);
@@ -551,17 +658,45 @@ async function audBuzz(){
 
 function audLeave(){
   if(AUD._sub){try{AUD._sub();}catch{}AUD._sub=null;}
+  if(AUD._sessSub){try{AUD._sessSub();}catch{}AUD._sessSub=null;}
   AUD.sess=null;AUD.name='';AUD.eid=null;AUD.buzzed=false;
   document.getElementById('bpanel').style.display='none';
   document.getElementById('jpanel').style.display='block';
-  document.getElementById('aname').value='';
+  document.getElementById('sess-ended').classList.remove('show');
+  // Keep name but clear code for convenience
   document.getElementById('acode').value='';
   setJoinBtn('Join Session',false);
   audErr('');
 }
 
-/* Boot */
-adminBoot();
+/* ════════════════════════════════════════════
+   BOOT — decide which page to show
+════════════════════════════════════════════ */
+(function boot(){
+  const code=getParam('code');   // from QR scan: ?code=XXXX
+
+  if(isMobile()){
+    // Mobile always gets audience view
+    goTo('audience');
+    // Pre-fill code if from QR scan
+    if(code){
+      document.getElementById('acode').value=code;
+      // Focus name field so they just type their name
+      setTimeout(()=>document.getElementById('aname').focus(),300);
+    }
+  }else{
+    // Desktop — check if they came via QR link
+    if(code){
+      // Desktop via QR — still show audience
+      goTo('audience');
+      document.getElementById('acode').value=code;
+      setTimeout(()=>document.getElementById('aname').focus(),300);
+    }else{
+      // Desktop direct load — show admin
+      goTo('admin');
+    }
+  }
+})();
 </script>
 </body>
 </html>
