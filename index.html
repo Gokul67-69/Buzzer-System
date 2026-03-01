@@ -6,7 +6,6 @@
   <title>BuzzSys</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
 
-  <!-- Firebase compat SDK — works as plain <script> tags, no bundler needed -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script>
@@ -19,62 +18,58 @@
       appId:             "1:942193699731:web:a704201720aed264671666"
     });
     const db = firebase.firestore();
-    // Enable offline persistence so the app still works on flaky mobile connections
-    db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+    db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
   </script>
 
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --ab:#080b0f; --ap:#0e1318; --abr:#1c2433;
-  --ac:#00c896; --at:#b8cfe0; --am:#3d5068;
-  --ad:#f0404a;
-  --qb:#010509; --qc:#00ffc8; --qp:#ff00aa; --ql:#007bff;
+  --ab:#080b0f;--ap:#0e1318;--abr:#1c2433;
+  --ac:#00c896;--at:#b8cfe0;--am:#3d5068;--ad:#f0404a;
+  --qb:#010509;--qc:#00ffc8;--qp:#ff00aa;--ql:#007bff;
 }
 html,body{height:100%}
 body{font-family:'IBM Plex Mono',monospace;background:var(--ab);color:var(--at);overflow-x:hidden}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-thumb{background:var(--abr);border-radius:2px}
-
-/* Page system */
 .page{display:none;min-height:100vh;flex-direction:column}
 .page.active{display:flex}
 
-/* ── ADMIN ───────────────────────────────────────────── */
+/* ADMIN */
 #pg-admin{background:var(--ab)}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;background:var(--ap);border-bottom:1px solid var(--abr);flex-shrink:0}
 .logo{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--ac);font-weight:500}
 .sub{font-size:10px;letter-spacing:2px;color:var(--am);text-transform:uppercase}
-.body{flex:1;display:grid;grid-template-columns:300px 1fr;overflow:hidden;height:calc(100vh - 53px)}
+.abody{flex:1;display:grid;grid-template-columns:300px 1fr;overflow:hidden;height:calc(100vh - 53px)}
 .sidebar{border-right:1px solid var(--abr);display:flex;flex-direction:column;overflow:hidden}
 .sec{padding:18px;border-bottom:1px solid var(--abr)}
 .sec-title{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--am);margin-bottom:12px}
 .ai{width:100%;padding:9px 12px;background:#070a0d;border:1px solid var(--abr);color:var(--at);font-family:'IBM Plex Mono',monospace;font-size:13px;outline:none;transition:border-color .2s}
 .ai:focus{border-color:var(--ac)}
-.ab{display:block;width:100%;padding:10px;margin-top:8px;background:transparent;border:1px solid var(--ac);color:var(--ac);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .2s}
-.ab:hover{background:var(--ac);color:#000}
-.ab.r{border-color:var(--ad);color:var(--ad)}
-.ab.r:hover{background:var(--ad);color:#fff}
-.ab.s{width:auto;padding:5px 12px;font-size:9px;margin-top:0}
+.abtn{display:block;width:100%;padding:10px;margin-top:8px;background:transparent;border:1px solid var(--ac);color:var(--ac);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .2s}
+.abtn:hover{background:var(--ac);color:#000}
+.abtn.r{border-color:var(--ad);color:var(--ad)}
+.abtn.r:hover{background:var(--ad);color:#fff}
+.abtn.s{width:auto;padding:5px 12px;font-size:9px;margin-top:0}
 .slist{flex:1;overflow-y:auto;padding:12px}
 .sc{padding:12px 14px;margin-bottom:8px;background:#070a0d;border:1px solid var(--abr);cursor:pointer;position:relative;transition:border-color .15s}
 .sc:hover,.sc.on{border-color:var(--ac)}
 .sc.on::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--ac)}
-.sn{font-size:13px;color:var(--at);margin-bottom:2px}
+.sname{font-size:13px;color:var(--at);margin-bottom:2px}
 .scode{display:block;font-size:24px;letter-spacing:6px;color:var(--ac);font-weight:700;margin:4px 0 2px}
-.sm2{font-size:10px;color:var(--am)}
-.main{display:flex;flex-direction:column;overflow:hidden}
+.smeta{font-size:10px;color:var(--am)}
+.amain{display:flex;flex-direction:column;overflow:hidden}
 .tabs{display:flex;align-items:center;border-bottom:1px solid var(--abr);background:var(--ap);padding:0 24px;flex-shrink:0}
 .tab{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--am);padding:14px 16px;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .2s}
 .tab.on{color:var(--ac);border-bottom-color:var(--ac)}
 .tab:hover:not(.on){color:var(--at)}
-.tab-r{margin-left:auto;display:flex;gap:8px;align-items:center}
-.content{flex:1;overflow-y:auto;padding:24px 28px}
+.tabr{margin-left:auto;display:flex;gap:8px;align-items:center}
+.acontent{flex:1;overflow-y:auto;padding:24px 28px}
 .ct{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--am);margin-bottom:18px}
 .empty{text-align:center;padding:60px 20px;color:var(--am);font-size:11px;letter-spacing:2px;text-transform:uppercase}
 .qg{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
 .qc{background:var(--ap);border:1px solid var(--abr);padding:14px;position:relative}
-.qn{position:absolute;top:8px;right:10px;font-size:30px;font-weight:700;color:var(--ac);opacity:.2}
+.qnum{position:absolute;top:8px;right:10px;font-size:30px;font-weight:700;color:var(--ac);opacity:.2}
 .qname{font-size:14px;color:var(--at)}
 .qtime{font-size:10px;color:var(--am);margin-top:3px}
 .qact{margin-top:10px}
@@ -82,7 +77,7 @@ body{font-family:'IBM Plex Mono',monospace;background:var(--ab);color:var(--at);
 .ltbl th{text-align:left;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--am);padding:7px 10px;border-bottom:1px solid var(--abr)}
 .ltbl td{padding:9px 10px;font-size:12px;border-bottom:1px solid #0a0e14;vertical-align:middle}
 .ltbl tr:hover td{background:#0a0e14}
-.lb{display:inline-block;width:24px;height:24px;line-height:24px;text-align:center;background:#131d2a;color:var(--ac);font-size:10px;font-weight:700}
+.lbadge{display:inline-block;width:24px;height:24px;line-height:24px;text-align:center;background:#131d2a;color:var(--ac);font-size:10px;font-weight:700}
 .tdis{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--am);padding:2px 7px;border:1px solid var(--abr)}
 .tact{font-size:10px;color:var(--ac);letter-spacing:1px}
 .nsw{font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:7px 14px;cursor:pointer;font-family:'IBM Plex Mono',monospace;background:transparent;transition:all .2s}
@@ -90,18 +85,16 @@ body{font-family:'IBM Plex Mono',monospace;background:var(--ab);color:var(--at);
 .nsd:hover{border-color:var(--ac);color:var(--ac)}
 .nsl{border:1px solid rgba(0,255,200,.2);color:rgba(0,255,200,.4);position:fixed;top:14px;right:14px;z-index:100}
 .nsl:hover{border-color:var(--qc);color:var(--qc)}
-
-/* status dot */
-.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:middle}
-.dot.live{background:var(--ac);box-shadow:0 0 6px var(--ac);animation:dotPulse 1.5s ease-in-out infinite}
-@keyframes dotPulse{0%,100%{opacity:1}50%{opacity:.3}}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.dot.live{background:var(--ac);animation:dp 1.5s ease-in-out infinite}
+@keyframes dp{0%,100%{opacity:1}50%{opacity:.3}}
 .dot.closed{background:var(--am)}
 
-/* ── AUDIENCE ────────────────────────────────────────── */
+/* AUDIENCE */
 #pg-audience{background:var(--qb);align-items:center;justify-content:center;position:relative;overflow:hidden;font-family:'Orbitron',sans-serif}
 #stars{position:fixed;inset:0;pointer-events:none}
-.star{position:absolute;border-radius:50%;background:#fff;animation:sblink var(--sd) var(--ss) infinite alternate ease-in-out}
-@keyframes sblink{from{opacity:var(--sa);transform:scale(1)}to{opacity:var(--sb);transform:scale(1.8)}}
+.star{position:absolute;border-radius:50%;background:#fff;animation:sb var(--sd) var(--ss) infinite alternate ease-in-out}
+@keyframes sb{from{opacity:var(--sa);transform:scale(1)}to{opacity:var(--sb);transform:scale(1.8)}}
 .floor{position:fixed;bottom:0;left:0;right:0;height:42vh;perspective:500px;pointer-events:none}
 .floor-i{width:100%;height:100%;background:linear-gradient(rgba(0,255,200,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,200,.06) 1px,transparent 1px);background-size:55px 55px;transform:rotateX(68deg);transform-origin:bottom;animation:fp 5s ease-in-out infinite}
 @keyframes fp{0%,100%{opacity:.45}50%{opacity:.9}}
@@ -111,16 +104,29 @@ body{font-family:'IBM Plex Mono',monospace;background:var(--ab);color:var(--at);
 .qtitle{font-size:clamp(26px,6.5vw,52px);font-weight:900;letter-spacing:8px;text-transform:uppercase;background:linear-gradient(130deg,var(--qc),var(--ql));-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 24px rgba(0,255,200,.35));animation:bob 3.5s ease-in-out infinite}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
 .qcard{width:100%;background:rgba(0,15,35,.72);border:1px solid rgba(0,255,200,.18);backdrop-filter:blur(18px);padding:26px;position:relative;overflow:hidden}
-.qcard::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--qc),transparent);animation:scan 2.2s linear infinite}
-@keyframes scan{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.qcard::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--qc),transparent);animation:sc2 2.2s linear infinite}
+@keyframes sc2{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
 .qlbl{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(0,255,200,.4);font-family:'Share Tech Mono',monospace;margin-bottom:7px}
 .qf{width:100%;padding:12px;background:rgba(0,255,200,.04);border:1px solid rgba(0,255,200,.25);color:var(--qc);font-family:'Orbitron',sans-serif;font-size:26px;font-weight:700;letter-spacing:10px;text-align:center;text-transform:uppercase;outline:none;transition:all .3s;margin-bottom:16px}
 .qf::placeholder{color:rgba(0,255,200,.18);font-size:11px;letter-spacing:3px;font-weight:400}
 .qf:focus{border-color:var(--qc);box-shadow:0 0 30px rgba(0,255,200,.1),inset 0 0 16px rgba(0,255,200,.04)}
 .qf.nm{font-size:13px;letter-spacing:2px;color:rgba(200,230,255,.9);font-family:'Share Tech Mono',monospace}
 .qjoin{width:100%;padding:15px;background:transparent;border:2px solid var(--qc);color:var(--qc);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:4px;text-transform:uppercase;cursor:pointer;transition:all .25s;margin-top:2px}
-.qjoin:hover{background:rgba(0,255,200,.08);box-shadow:0 0 36px rgba(0,255,200,.22)}
-.qerr{color:#f04040;font-size:11px;letter-spacing:1px;font-family:'Share Tech Mono',monospace;margin-top:6px;display:none}
+.qjoin:hover:not(:disabled){background:rgba(0,255,200,.08);box-shadow:0 0 36px rgba(0,255,200,.22)}
+.qjoin:disabled{opacity:.5;cursor:not-allowed}
+
+/* Error box - more visible */
+.qerr{
+  display:none;
+  margin-top:10px;padding:10px 14px;
+  background:rgba(240,64,74,.12);
+  border:1px solid rgba(240,64,74,.4);
+  color:#f0606a;
+  font-size:11px;letter-spacing:.5px;
+  font-family:'Share Tech Mono',monospace;
+  line-height:1.5;
+}
+
 .bzzone{display:flex;flex-direction:column;align-items:center;gap:16px}
 .bzs{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(0,255,200,.3);font-family:'Share Tech Mono',monospace}
 .bzw{position:relative;width:190px;height:190px;display:flex;align-items:center;justify-content:center}
@@ -148,42 +154,42 @@ body{font-family:'IBM Plex Mono',monospace;background:var(--ab);color:var(--at);
 </head>
 <body>
 
-<!-- ══════════ ADMIN PAGE ══════════ -->
+<!-- ADMIN PAGE -->
 <div id="pg-admin" class="page active">
   <div class="topbar">
     <span class="logo">BUZZSYS // ADMIN</span>
     <span class="sub">Control Panel</span>
     <button class="nsw nsd" onclick="goTo('audience')">→ Audience View</button>
   </div>
-  <div class="body">
+  <div class="abody">
     <div class="sidebar">
       <div class="sec">
         <div class="sec-title">New Session</div>
         <input id="inp" class="ai" placeholder="Session name…" onkeydown="if(event.key==='Enter')createSess()"/>
-        <button class="ab" onclick="createSess()">Create Session</button>
+        <button class="abtn" onclick="createSess()">Create Session</button>
       </div>
       <div class="sec" style="flex:1;overflow:hidden;display:flex;flex-direction:column;padding-bottom:0">
         <div class="sec-title">Sessions</div>
         <div class="slist" id="slist"><div class="empty">Connecting…</div></div>
       </div>
     </div>
-    <div class="main">
+    <div class="amain">
       <div class="tabs">
         <button class="tab on" id="tq" onclick="setTab('queue')">Live Queue</button>
         <button class="tab"    id="tl" onclick="setTab('log')">History Log</button>
-        <div class="tab-r" id="tabr" style="display:none">
-          <button class="ab s" onclick="clearQ()">Clear Queue</button>
-          <button class="ab s r" id="btnclose" onclick="closeSess()">Close Session</button>
+        <div class="tabr" id="tabr" style="display:none">
+          <button class="abtn s" onclick="clearQ()">Clear Queue</button>
+          <button class="abtn s r" id="btnclose" onclick="closeSess()">Close Session</button>
         </div>
       </div>
-      <div class="content" id="content">
+      <div class="acontent" id="content">
         <div class="empty" style="margin-top:70px">Select or create a session</div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ══════════ AUDIENCE PAGE ══════════ -->
+<!-- AUDIENCE PAGE -->
 <div id="pg-audience" class="page">
   <div id="stars"></div>
   <div class="floor"><div class="floor-i"></div></div>
@@ -194,8 +200,6 @@ body{font-family:'IBM Plex Mono',monospace;background:var(--ab);color:var(--at);
 
   <div class="qwrap">
     <div class="qtitle">BUZZER</div>
-
-    <!-- join form -->
     <div class="qcard" id="jpanel">
       <div class="qlbl">Your Name</div>
       <input class="qf nm" id="aname" placeholder="Enter your name…" onkeydown="if(event.key==='Enter')audJoin()"/>
@@ -204,10 +208,9 @@ body{font-family:'IBM Plex Mono',monospace;background:var(--ab);color:var(--at);
              oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
              onkeydown="if(event.key==='Enter')audJoin()"/>
       <div class="qerr" id="aerr"></div>
-      <button class="qjoin" onclick="audJoin()">Join Session</button>
+      <button class="qjoin" id="jbtn" onclick="audJoin()">Join Session</button>
     </div>
 
-    <!-- buzz panel -->
     <div class="bzzone" id="bpanel" style="display:none">
       <div class="bzs" id="bslbl"></div>
       <div class="bzw">
@@ -225,19 +228,15 @@ body{font-family:'IBM Plex Mono',monospace;background:var(--ab);color:var(--at);
 </div>
 
 <script>
-/* ═══════════════════════════════════════════════════════
-   HELPERS
-═══════════════════════════════════════════════════════ */
+/* ── Helpers ─────────────────────────────────────────────── */
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function genCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<4;i++)s+=c[Math.floor(Math.random()*c.length)];return s}
 function tsMs(ts){if(!ts)return 0;return ts.toMillis?ts.toMillis():Number(ts)}
 function fmtT(ts){if(!ts)return'—';const d=ts.toDate?ts.toDate():new Date(ts);return d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
 function fmtD(ts){if(!ts)return'—';const d=ts.toDate?ts.toDate():new Date(ts);return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
-const TS = ()=>firebase.firestore.FieldValue.serverTimestamp();
+const TS=()=>firebase.firestore.FieldValue.serverTimestamp();
 
-/* ═══════════════════════════════════════════════════════
-   PAGE ROUTER
-═══════════════════════════════════════════════════════ */
+/* ── Router ──────────────────────────────────────────────── */
 let starsOk=false;
 function goTo(name){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -246,9 +245,7 @@ function goTo(name){
   if(name==='admin')adminBoot();
 }
 
-/* ═══════════════════════════════════════════════════════
-   STARS
-═══════════════════════════════════════════════════════ */
+/* ── Stars ───────────────────────────────────────────────── */
 function buildStars(){
   const w=document.getElementById('stars');
   for(let i=0;i<100;i++){
@@ -260,67 +257,40 @@ function buildStars(){
   starsOk=true;
 }
 
-/* ═══════════════════════════════════════════════════════
-   ADMIN STATE
-   
-   FIX: All Firestore listeners are stored and properly
-   unsubscribed before new ones are created. Listeners
-   are NEVER restarted from within another listener's
-   callback (the root cause of the previous sync bug).
-═══════════════════════════════════════════════════════ */
-const A={
-  selId:   null,
-  tab:     'queue',
-  _subs:   [],          // all active unsub functions
-};
-
-// Cancel every active listener
-function killAll(){
-  A._subs.forEach(fn=>{try{fn()}catch{}});
-  A._subs=[];
-}
-
-// Register a listener so it gets cleaned up automatically
-function reg(unsub){ if(unsub) A._subs.push(unsub); }
+/* ══════════════════════════════════════════════════════════
+   ADMIN
+══════════════════════════════════════════════════════════ */
+const A={selId:null,tab:'queue',_subs:[]};
+function killAll(){A._subs.forEach(fn=>{try{fn()}catch{}});A._subs=[];}
+function reg(u){if(u)A._subs.push(u);}
 
 function adminBoot(){
   killAll();
-
-  // ── Sessions list (always-on listener) ──────────────
   reg(
     db.collection('sessions').orderBy('createdAt','desc')
       .onSnapshot(snap=>{
-        renderSessions(snap.docs.map(d=>({id:d.id,...d.data()})));
-      }, err=>{
-        document.getElementById('slist').innerHTML=
-          '<div class="empty">⚠ '+esc(err.message)+'</div>';
+        renderSess(snap.docs.map(d=>({id:d.id,...d.data()})));
+      },err=>{
+        document.getElementById('slist').innerHTML='<div class="empty">⚠ '+esc(err.message)+'</div>';
       })
   );
 }
 
-function renderSessions(list){
+function renderSess(list){
   const el=document.getElementById('slist');
-  if(!list.length){el.innerHTML='<div class="empty">No sessions yet</div>';return}
+  if(!list.length){el.innerHTML='<div class="empty">No sessions yet</div>';return;}
   el.innerHTML=list.map(s=>`
     <div class="sc ${A.selId===s.id?'on':''}" data-id="${s.id}" onclick="selSess('${s.id}')">
-      <div class="sn">${esc(s.name)}</div>
+      <div class="sname">${esc(s.name)}</div>
       <span class="scode">${esc(s.code)}</span>
-      <div class="sm2" id="qc-${s.id}">— in queue</div>
-      <div class="sm2">
-        <span class="dot ${s.active?'live':'closed'}"></span>
-        ${s.active?'ACTIVE':'CLOSED'}
-      </div>
+      <div class="smeta" id="qc-${s.id}">— in queue</div>
+      <div class="smeta"><span class="dot ${s.active?'live':'closed'}"></span>${s.active?'ACTIVE':'CLOSED'}</div>
     </div>`).join('');
-
-  // Per-session live queue count
   list.forEach(s=>{
-    reg(
-      db.collection('queue').where('sessionId','==',s.id)
-        .onSnapshot(snap=>{
-          const c=document.getElementById('qc-'+s.id);
-          if(c) c.textContent=snap.size+' in queue';
-        })
-    );
+    reg(db.collection('queue').where('sessionId','==',s.id).onSnapshot(snap=>{
+      const c=document.getElementById('qc-'+s.id);
+      if(c)c.textContent=snap.size+' in queue';
+    }));
   });
 }
 
@@ -328,22 +298,21 @@ async function createSess(){
   const inp=document.getElementById('inp');
   const name=inp.value.trim();if(!name)return;
   const ref=await db.collection('sessions').add({name,code:genCode(),createdAt:TS(),active:true});
-  inp.value='';
-  selSess(ref.id);
+  inp.value='';selSess(ref.id);
 }
 
 function selSess(id){
   A.selId=id;
   document.querySelectorAll('.sc').forEach(c=>c.classList.toggle('on',c.dataset.id===id));
   document.getElementById('tabr').style.display='flex';
-  startContentListener();
+  startContent();
 }
 
 function setTab(t){
   A.tab=t;
   document.getElementById('tq').classList.toggle('on',t==='queue');
   document.getElementById('tl').classList.toggle('on',t==='log');
-  startContentListener();
+  startContent();
 }
 
 async function closeSess(){
@@ -359,76 +328,58 @@ async function clearQ(){
 
 async function dismiss(id){
   await db.collection('queue').doc(id).delete();
-  try{await db.collection('log').doc(id).update({dismissed:true})}catch{}
+  try{await db.collection('log').doc(id).update({dismissed:true});}catch{}
 }
 
-/* ─────────────────────────────────────────────────────
-   startContentListener — THE KEY FIX
-   
-   Uses a simple .where() WITHOUT .orderBy() to avoid
-   needing a composite Firestore index (which was silently
-   failing and returning no results).
-   
-   Sorting is done client-side after data arrives.
-   
-   Only ONE content listener exists at a time. It is
-   stopped and replaced when tab or session changes.
-   A separate _contentUnsub handle tracks it so we don't
-   cancel the sessions listener accidentally.
-───────────────────────────────────────────────────── */
-let _cu=null; // content unsub handle
-function stopContent(){if(_cu){try{_cu()}catch{}_cu=null}}
+/* Content listener — separate handle so it doesn't cancel session listener */
+let _cu=null;
+function stopContent(){if(_cu){try{_cu()}catch{}_cu=null;}}
 
-function startContentListener(){
-  stopContent(); // stop previous content listener only
+function startContent(){
+  stopContent();
   if(!A.selId)return;
-
-  const sid=A.selId;  // capture for closure
+  const sid=A.selId;
   const content=document.getElementById('content');
   content.innerHTML='<div class="empty">Loading…</div>';
 
-  // Fetch session name/code once for display
   db.collection('sessions').doc(sid).get().then(sdoc=>{
     if(!sdoc.exists)return;
     const sess=sdoc.data();
-
-    // Update close button
     document.getElementById('btnclose').style.display=sess.active?'inline-block':'none';
 
-    const col = A.tab==='queue'?'queue':'log';
-    const sortDir = A.tab==='queue'?1:-1; // queue: oldest first, log: newest first
+    const col=A.tab==='queue'?'queue':'log';
+    const dir=A.tab==='queue'?1:-1;
 
-    _cu = db.collection(col)
-      .where('sessionId','==',sid)          // simple where, no orderBy = no index needed
+    // Simple .where() only — no .orderBy() = no composite index needed
+    _cu=db.collection(col).where('sessionId','==',sid)
       .onSnapshot(snap=>{
-        // Client-side sort
         const rows=snap.docs
           .map(d=>({id:d.id,...d.data()}))
-          .sort((a,b)=>(tsMs(a.buzzedAt)-tsMs(b.buzzedAt))*sortDir);
+          .sort((a,b)=>(tsMs(a.buzzedAt)-tsMs(b.buzzedAt))*dir);
 
         if(A.tab==='queue'){
           let h=`<div class="ct">Live Queue — ${esc(sess.name)} [${esc(sess.code)}] — ${rows.length} waiting</div>`;
           if(!rows.length){
             h+='<div class="empty">Queue is empty — waiting for buzzes</div>';
-          } else {
+          }else{
             h+='<div class="qg">'+rows.map((e,i)=>`
               <div class="qc">
-                <div class="qn">#${i+1}</div>
+                <div class="qnum">#${i+1}</div>
                 <div class="qname">${esc(e.name)}</div>
                 <div class="qtime">${fmtT(e.buzzedAt)}</div>
-                <div class="qact"><button class="ab s r" onclick="dismiss('${e.id}')">Dismiss</button></div>
+                <div class="qact"><button class="abtn s r" onclick="dismiss('${e.id}')">Dismiss</button></div>
               </div>`).join('')+'</div>';
           }
           content.innerHTML=h;
-        } else {
+        }else{
           let h=`<div class="ct">History — ${esc(sess.name)} — ${rows.length} events</div>`;
           if(!rows.length){
             h+='<div class="empty">No buzz events yet</div>';
-          } else {
+          }else{
             h+=`<table class="ltbl">
               <thead><tr><th>Pos</th><th>Participant</th><th>Date</th><th>Time</th><th>Status</th></tr></thead>
               <tbody>${rows.map(e=>`<tr>
-                <td><span class="lb">#${e.position||'?'}</span></td>
+                <td><span class="lbadge">#${e.position||'?'}</span></td>
                 <td style="color:var(--at);font-weight:500">${esc(e.name)}</td>
                 <td style="color:var(--am)">${fmtD(e.buzzedAt)}</td>
                 <td style="color:var(--am)">${fmtT(e.buzzedAt)}</td>
@@ -437,68 +388,90 @@ function startContentListener(){
           }
           content.innerHTML=h;
         }
-      }, err=>{
-        content.innerHTML='<div class="empty">⚠ '+esc(err.message)+'</div>';
-        console.error('content listener error:',err);
+      },err=>{
+        content.innerHTML='<div class="empty">⚠ Error: '+esc(err.message)+'</div>';
+        console.error('content listener:',err);
       });
-
-    // Also watch session doc for live active-state changes
-    reg(
-      db.collection('sessions').doc(sid).onSnapshot(sd=>{
-        if(!sd.exists)return;
-        document.getElementById('btnclose').style.display=
-          sd.data().active?'inline-block':'none';
-      })
-    );
   });
+
+  // Watch session doc for live active-state changes
+  reg(db.collection('sessions').doc(sid).onSnapshot(sd=>{
+    if(!sd.exists)return;
+    document.getElementById('btnclose').style.display=sd.data().active?'inline-block':'none';
+  }));
 }
 
-/* ═══════════════════════════════════════════════════════
-   AUDIENCE STATE
+/* ══════════════════════════════════════════════════════════
+   AUDIENCE
    
-   FIX: Queue listener starts AFTER the Firestore write
-   is confirmed (after await), not before. This prevents
-   the false "dismissed" detection on first snapshot.
-═══════════════════════════════════════════════════════ */
-const AUD={
-  sess:    null,
-  name:    '',
-  eid:     null,   // my entry doc ID
-  buzzed:  false,
-  _sub:    null,   // queue listener unsub
-};
+   KEY FIX: audJoin does TWO separate queries:
+   1. First searches by code only (no active filter)
+      so we can give a specific error if session exists
+      but is closed, vs code being completely wrong
+   2. Then checks active field client-side
+══════════════════════════════════════════════════════════ */
+const AUD={sess:null,name:'',eid:null,buzzed:false,_sub:null};
 
 function audErr(msg){
   const el=document.getElementById('aerr');
-  el.textContent=msg;el.style.display=msg?'block':'none';
+  el.textContent=msg;
+  el.style.display=msg?'block':'none';
+}
+
+function setJoinBtn(text,disabled){
+  const b=document.getElementById('jbtn');
+  b.textContent=text;b.disabled=disabled;
 }
 
 async function audJoin(){
   const name=document.getElementById('aname').value.trim();
   const code=document.getElementById('acode').value.trim().toUpperCase();
   audErr('');
-  if(!name){audErr('Please enter your name.');return}
-  if(code.length!==4){audErr('Enter the 4-character session code.');return}
 
-  // Disable button during lookup
-  const jbtn=document.querySelector('.qjoin');
-  jbtn.disabled=true;jbtn.textContent='Checking…';
+  if(!name){audErr('Please enter your name.');return;}
+  if(code.length!==4){audErr('Enter the 4-character session code.');return;}
+
+  setJoinBtn('Checking…',true);
 
   try{
-    const snap=await db.collection('sessions')
-      .where('code','==',code).where('active','==',true).get();
-    if(snap.empty){audErr('Session not found or already closed.');jbtn.disabled=false;jbtn.textContent='Join Session';return}
+    // Search by code only first — gives us better error messages
+    const snap=await db.collection('sessions').where('code','==',code).get();
 
-    AUD.sess={id:snap.docs[0].id,...snap.docs[0].data()};
+    if(snap.empty){
+      // Code doesn't exist at all
+      audErr('No session found with code "'+code+'". Check the code and try again.');
+      setJoinBtn('Join Session',false);
+      return;
+    }
+
+    // Code exists — check if active
+    const activeDocs=snap.docs.filter(d=>d.data().active===true);
+    if(!activeDocs.length){
+      audErr('Session "'+code+'" has been closed by the host. Ask them to create a new session.');
+      setJoinBtn('Join Session',false);
+      return;
+    }
+
+    // All good — join!
+    AUD.sess={id:activeDocs[0].id,...activeDocs[0].data()};
     AUD.name=name;AUD.buzzed=false;AUD.eid=null;
 
     document.getElementById('jpanel').style.display='none';
     document.getElementById('bpanel').style.display='flex';
     document.getElementById('bslbl').textContent=AUD.sess.name+' · '+AUD.sess.code;
     resetBuzz();
+
   }catch(e){
-    audErr('Error: '+e.message);
-    jbtn.disabled=false;jbtn.textContent='Join Session';
+    console.error('audJoin error:',e);
+    // Give specific error messages based on error type
+    if(e.code==='permission-denied'||String(e.message).includes('permission')){
+      audErr('⚠ Database access denied.\n\nThe host needs to fix Firestore Rules:\nFirebase Console → Firestore → Rules → set allow read, write: if true → Publish');
+    }else if(e.code==='unavailable'||String(e.message).includes('network')){
+      audErr('⚠ No internet connection. Please check your network and try again.');
+    }else{
+      audErr('⚠ Error: '+e.message);
+    }
+    setJoinBtn('Join Session',false);
   }
 }
 
@@ -513,10 +486,9 @@ function resetBuzz(){
 async function audBuzz(){
   if(AUD.buzzed||!AUD.sess)return;
   const b=document.getElementById('bzb');
-  b.disabled=true;b.textContent='…'; // immediate feedback
+  b.disabled=true;b.textContent='…';
 
   try{
-    // Get current queue size for position number
     const qsnap=await db.collection('queue').where('sessionId','==',AUD.sess.id).get();
     const pos=qsnap.size+1;
 
@@ -528,31 +500,24 @@ async function audBuzz(){
       dismissed:false,
     };
 
-    // Write to queue — wait for confirmation before starting listener
+    // Write and wait for confirmation before starting listener
     const ref=await db.collection('queue').add(entry);
-    // Also write to log with same ID for history
     await db.collection('log').doc(ref.id).set(entry);
 
     AUD.eid=ref.id;
     AUD.buzzed=true;
 
-    // Update UI
     b.className='bzb fired';b.textContent='BUZZED!';b.disabled=true;
     document.getElementById('posblk').style.display='block';
     document.getElementById('posnum').textContent='#'+pos;
     const st=document.getElementById('bzst');
     st.textContent='In queue — hold tight!';st.className='bzst wait';
 
-    // Flash
     const fl=document.createElement('div');fl.className='bzfl';
     document.body.appendChild(fl);setTimeout(()=>fl.remove(),600);
 
-    // ── Watch queue for position updates + dismissal ──
-    // FIX: We start this AFTER the write is confirmed so
-    // the first snapshot definitely includes our entry.
-    // FIX: Simple .where() only — no .orderBy() needed,
-    // we sort client-side to avoid index requirement.
-    if(AUD._sub){try{AUD._sub()}catch{}}
+    // Start queue watcher AFTER write confirmed
+    if(AUD._sub){try{AUD._sub();}catch{}AUD._sub=null;}
     AUD._sub=db.collection('queue')
       .where('sessionId','==',AUD.sess.id)
       .onSnapshot(snap=>{
@@ -561,48 +526,41 @@ async function audBuzz(){
           .sort((a,b)=>tsMs(a.buzzedAt)-tsMs(b.buzzedAt));
 
         const mine=all.find(e=>e.id===AUD.eid);
-
         if(!mine){
-          // Admin dismissed us
-          const b=document.getElementById('bzb');
+          // Dismissed or cleared by admin
+          if(AUD._sub){try{AUD._sub();}catch{}AUD._sub=null;}
+          AUD.buzzed=false;AUD.eid=null;
+          // Show dismissed message briefly
           b.className='bzb gone';b.textContent='DISMISSED';b.disabled=true;
           document.getElementById('posblk').style.display='none';
           const st=document.getElementById('bzst');
-          st.textContent='You were dismissed';st.className='bzst out';
-          AUD.buzzed=false;AUD.eid=null;
-          if(AUD._sub){try{AUD._sub()}catch{}AUD._sub=null}
+          st.textContent='Dismissed — buzzing again in 2s...';st.className='bzst out';
+          // After 2 seconds reset fully so they can buzz again
+          setTimeout(()=>{ resetBuzz(); }, 2000);
           return;
         }
-
-        // Update live position
         const idx=all.findIndex(e=>e.id===AUD.eid)+1;
         document.getElementById('posnum').textContent='#'+idx;
-      },err=>{
-        console.error('audience queue watch:',err);
-      });
+      },err=>{console.error('audience queue watch:',err);});
 
   }catch(e){
     console.error('buzz error:',e);
     b.disabled=false;b.textContent='BUZZ';
-    audErr('Failed to buzz: '+e.message);
   }
 }
 
 function audLeave(){
-  if(AUD._sub){try{AUD._sub()}catch{}AUD._sub=null}
+  if(AUD._sub){try{AUD._sub();}catch{}AUD._sub=null;}
   AUD.sess=null;AUD.name='';AUD.eid=null;AUD.buzzed=false;
   document.getElementById('bpanel').style.display='none';
   document.getElementById('jpanel').style.display='block';
   document.getElementById('aname').value='';
   document.getElementById('acode').value='';
-  document.querySelector('.qjoin').disabled=false;
-  document.querySelector('.qjoin').textContent='Join Session';
+  setJoinBtn('Join Session',false);
   audErr('');
 }
 
-/* ═══════════════════════════════════════════════════════
-   BOOT
-═══════════════════════════════════════════════════════ */
+/* Boot */
 adminBoot();
 </script>
 </body>
