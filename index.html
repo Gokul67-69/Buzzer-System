@@ -1,711 +1,1095 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>BuzzSys</title>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
-  <!-- QR code library -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <script>
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>BuzzSys</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyBeTlvIU2lPUNVwKFSr7KqezCC9JJbJbsY",
-  authDomain: "buzzer-f2b72.firebaseapp.com",
-  projectId: "buzzer-f2b72",
-  storageBucket: "buzzer-f2b72.firebasestorage.app",
+<!-- Firebase v9 compat (works in plain HTML, no bundler needed) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+// ─── Firebase init ────────────────────────────────────────────────
+const _app = firebase.initializeApp({
+  apiKey:            "AIzaSyBeTlvIU2lPUNVwKFSr7KqezCC9JJbJbsY",
+  authDomain:        "buzzer-f2b72.firebaseapp.com",
+  projectId:         "buzzer-f2b72",
+  storageBucket:     "buzzer-f2b72.firebasestorage.app",
   messagingSenderId: "942193699731",
-  appId: "1:942193699731:web:a704201720aed264671666",
-  measurementId: "G-MD6NTSKD9C"
-};
+  appId:             "1:942193699731:web:a704201720aed264671666"
+});
+const db = firebase.firestore();
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);  </script>
+// Verify connection on load
+db.collection('_ping').limit(1).get()
+  .then(() => console.log('✅ Firebase connected'))
+  .catch(e => console.error('❌ Firebase error:', e.code, e.message));
+</script>
 
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --ab:#080b0f;--ap:#0e1318;--abr:#1c2433;
-  --ac:#00c896;--at:#b8cfe0;--am:#3d5068;--ad:#f0404a;
-  --qb:#010509;--qc:#00ffc8;--qp:#ff00aa;--ql:#007bff;
+/* ─── Reset & vars ──────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:     #080b0f;
+  --panel:  #0e1318;
+  --bdr:    #1c2433;
+  --green:  #00c896;
+  --txt:    #b8cfe0;
+  --dim:    #3d5068;
+  --red:    #f0404a;
+  --black:  #010509;
+  --cyan:   #00ffc8;
+  --pink:   #ff00aa;
+  --blue:   #007bff;
 }
-html,body{height:100%}
-body{font-family:'IBM Plex Mono',monospace;background:var(--ab);color:var(--at);overflow-x:hidden}
-::-webkit-scrollbar{width:4px}
-::-webkit-scrollbar-thumb{background:var(--abr);border-radius:2px}
-.page{display:none;min-height:100vh;flex-direction:column}
-.page.active{display:flex}
+html, body { height: 100%; }
+body { font-family: 'IBM Plex Mono', monospace; background: var(--bg); color: var(--txt); overflow-x: hidden; }
+button { cursor: pointer; font-family: inherit; }
+input  { font-family: inherit; }
+::-webkit-scrollbar       { width: 4px; }
+::-webkit-scrollbar-thumb { background: var(--bdr); border-radius: 2px; }
 
-/* ── ADMIN ───────────────────────────────────── */
-#pg-admin{background:var(--ab)}
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;background:var(--ap);border-bottom:1px solid var(--abr);flex-shrink:0}
-.logo{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--ac);font-weight:500}
-.sub{font-size:10px;letter-spacing:2px;color:var(--am);text-transform:uppercase}
-.abody{flex:1;display:grid;grid-template-columns:300px 1fr;overflow:hidden;height:calc(100vh - 53px)}
-.sidebar{border-right:1px solid var(--abr);display:flex;flex-direction:column;overflow:hidden}
-.sec{padding:18px;border-bottom:1px solid var(--abr)}
-.sec-title{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--am);margin-bottom:12px}
-.ai{width:100%;padding:9px 12px;background:#070a0d;border:1px solid var(--abr);color:var(--at);font-family:'IBM Plex Mono',monospace;font-size:13px;outline:none;transition:border-color .2s}
-.ai:focus{border-color:var(--ac)}
-.abtn{display:block;width:100%;padding:10px;margin-top:8px;background:transparent;border:1px solid var(--ac);color:var(--ac);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .2s}
-.abtn:hover{background:var(--ac);color:#000}
-.abtn.r{border-color:var(--ad);color:var(--ad)}
-.abtn.r:hover{background:var(--ad);color:#fff}
-.abtn.s{width:auto;padding:5px 12px;font-size:9px;margin-top:0}
-.slist{flex:1;overflow-y:auto;padding:12px}
-.sc{padding:12px 14px;margin-bottom:8px;background:#070a0d;border:1px solid var(--abr);cursor:pointer;position:relative;transition:border-color .15s}
-.sc:hover,.sc.on{border-color:var(--ac)}
-.sc.on::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--ac)}
-.sname{font-size:13px;color:var(--at);margin-bottom:2px}
-.scode{display:block;font-size:24px;letter-spacing:6px;color:var(--ac);font-weight:700;margin:4px 0 2px}
-.smeta{font-size:10px;color:var(--am)}
-.amain{display:flex;flex-direction:column;overflow:hidden}
-.tabs{display:flex;align-items:center;border-bottom:1px solid var(--abr);background:var(--ap);padding:0 24px;flex-shrink:0}
-.tab{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--am);padding:14px 16px;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:'IBM Plex Mono',monospace;transition:all .2s}
-.tab.on{color:var(--ac);border-bottom-color:var(--ac)}
-.tab:hover:not(.on){color:var(--at)}
-.tabr{margin-left:auto;display:flex;gap:8px;align-items:center}
-.acontent{flex:1;overflow-y:auto;padding:24px 28px}
-.ct{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--am);margin-bottom:18px}
-.empty{text-align:center;padding:60px 20px;color:var(--am);font-size:11px;letter-spacing:2px;text-transform:uppercase}
-.qg{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
-.qc{background:var(--ap);border:1px solid var(--abr);padding:14px;position:relative}
-.qnum{position:absolute;top:8px;right:10px;font-size:30px;font-weight:700;color:var(--ac);opacity:.2}
-.qname{font-size:14px;color:var(--at)}
-.qtime{font-size:10px;color:var(--am);margin-top:3px}
-.qact{margin-top:10px}
-.ltbl{width:100%;border-collapse:collapse}
-.ltbl th{text-align:left;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--am);padding:7px 10px;border-bottom:1px solid var(--abr)}
-.ltbl td{padding:9px 10px;font-size:12px;border-bottom:1px solid #0a0e14;vertical-align:middle}
-.ltbl tr:hover td{background:#0a0e14}
-.lbadge{display:inline-block;width:24px;height:24px;line-height:24px;text-align:center;background:#131d2a;color:var(--ac);font-size:10px;font-weight:700}
-.tdis{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--am);padding:2px 7px;border:1px solid var(--abr)}
-.tact{font-size:10px;color:var(--ac);letter-spacing:1px}
-.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle}
-.dot.live{background:var(--ac);animation:dp 1.5s ease-in-out infinite}
-@keyframes dp{0%,100%{opacity:1}50%{opacity:.3}}
-.dot.closed{background:var(--am)}
+/* ─── Page system ───────────────────────────────────── */
+.page         { display: none;  min-height: 100vh; flex-direction: column; }
+.page.active  { display: flex; }
 
-/* QR Panel */
-.qr-panel{
-  background:var(--ap);border:1px solid var(--abr);
-  padding:20px;text-align:center;
+/* ═══════════════════════════════════════════════════════
+   LOGIN PAGE
+═══════════════════════════════════════════════════════ */
+#pg-login {
+  background: var(--bg);
+  align-items: center;
+  justify-content: center;
 }
-.qr-panel-title{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--am);margin-bottom:14px}
-.qr-wrap{
-  display:inline-block;padding:12px;background:#fff;
-  margin-bottom:12px;
+.login-box {
+  width: 320px;
+  background: var(--panel);
+  border: 1px solid var(--bdr);
+  padding: 36px 28px;
+  position: relative;
+  overflow: hidden;
 }
-.qr-wrap canvas,.qr-wrap img{display:block}
-.qr-url{
-  font-size:9px;color:var(--am);letter-spacing:1px;
-  word-break:break-all;margin-top:6px;
+.login-box::after {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--green), transparent);
+  animation: lscan 2.5s linear infinite;
 }
-.qr-hint{
-  font-size:10px;color:var(--ac);letter-spacing:1px;
-  margin-top:4px;
+@keyframes lscan { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+.login-title {
+  font-size: 13px; letter-spacing: 6px; text-transform: uppercase;
+  color: var(--green); font-weight: 700; text-align: center; margin-bottom: 4px;
+}
+.login-sub {
+  font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--dim); text-align: center; margin-bottom: 28px;
+}
+.login-label {
+  display: block; font-size: 9px; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--dim); margin-bottom: 6px;
+}
+.login-input {
+  width: 100%; padding: 10px 12px;
+  background: #060809; border: 1px solid var(--bdr);
+  color: var(--txt); font-size: 14px; letter-spacing: 2px;
+  outline: none; transition: border-color .2s;
+}
+.login-input:focus { border-color: var(--green); }
+.login-btn {
+  display: block; width: 100%; padding: 11px; margin-top: 14px;
+  background: transparent; border: 1px solid var(--green); color: var(--green);
+  font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+  transition: all .2s;
+}
+.login-btn:hover:not(:disabled) { background: var(--green); color: #000; }
+.login-btn:disabled { opacity: .4; cursor: not-allowed; }
+.login-err {
+  display: none; margin-top: 12px; padding: 9px 11px;
+  background: rgba(240,64,74,.1); border: 1px solid rgba(240,64,74,.3);
+  color: #f06068; font-size: 11px; line-height: 1.5;
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25%, 75%  { transform: translateX(-7px); }
+  50%       { transform: translateX(7px); }
+}
+.shake { animation: shake .35s ease; }
+
+/* ═══════════════════════════════════════════════════════
+   ADMIN PAGE
+═══════════════════════════════════════════════════════ */
+#pg-admin { background: var(--bg); }
+
+.adm-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 24px;
+  background: var(--panel); border-bottom: 1px solid var(--bdr);
+  flex-shrink: 0;
+}
+.adm-logo { font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: var(--green); font-weight: 500; }
+.adm-lock-btn {
+  padding: 5px 12px; background: transparent;
+  border: 1px solid var(--bdr); color: var(--dim);
+  font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+  transition: all .2s;
+}
+.adm-lock-btn:hover { border-color: var(--red); color: var(--red); }
+
+.adm-body {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  flex: 1; overflow: hidden;
+  height: calc(100vh - 51px);
 }
 
-/* ── AUDIENCE ────────────────────────────────── */
-#pg-audience{background:var(--qb);align-items:center;justify-content:center;position:relative;overflow:hidden;font-family:'Orbitron',sans-serif}
-#stars{position:fixed;inset:0;pointer-events:none}
-.star{position:absolute;border-radius:50%;background:#fff;animation:sb var(--sd) var(--ss) infinite alternate ease-in-out}
-@keyframes sb{from{opacity:var(--sa);transform:scale(1)}to{opacity:var(--sb);transform:scale(1.8)}}
-.floor{position:fixed;bottom:0;left:0;right:0;height:42vh;perspective:500px;pointer-events:none}
-.floor-i{width:100%;height:100%;background:linear-gradient(rgba(0,255,200,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,200,.06) 1px,transparent 1px);background-size:55px 55px;transform:rotateX(68deg);transform-origin:bottom;animation:fp 5s ease-in-out infinite}
-@keyframes fp{0%,100%{opacity:.45}50%{opacity:.9}}
-.ring{position:fixed;border-radius:50%;border:1px solid;pointer-events:none;left:50%;top:48%;animation:ro var(--rd) var(--rs) ease-out infinite;opacity:0}
-@keyframes ro{0%{transform:translate(-50%,-50%) scale(.15);opacity:.7}100%{transform:translate(-50%,-50%) scale(4);opacity:0}}
-.qwrap{position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;gap:22px;padding:24px;width:100%;max-width:500px}
-.qtitle{font-size:clamp(26px,6.5vw,52px);font-weight:900;letter-spacing:8px;text-transform:uppercase;background:linear-gradient(130deg,var(--qc),var(--ql));-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 24px rgba(0,255,200,.35));animation:bob 3.5s ease-in-out infinite}
-@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
-.qcard{width:100%;background:rgba(0,15,35,.72);border:1px solid rgba(0,255,200,.18);backdrop-filter:blur(18px);padding:26px;position:relative;overflow:hidden}
-.qcard::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--qc),transparent);animation:sc2 2.2s linear infinite}
-@keyframes sc2{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
-.qlbl{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(0,255,200,.4);font-family:'Share Tech Mono',monospace;margin-bottom:7px}
-.qf{width:100%;padding:12px;background:rgba(0,255,200,.04);border:1px solid rgba(0,255,200,.25);color:var(--qc);font-family:'Orbitron',sans-serif;font-size:26px;font-weight:700;letter-spacing:10px;text-align:center;text-transform:uppercase;outline:none;transition:all .3s;margin-bottom:16px}
-.qf::placeholder{color:rgba(0,255,200,.18);font-size:11px;letter-spacing:3px;font-weight:400}
-.qf:focus{border-color:var(--qc);box-shadow:0 0 30px rgba(0,255,200,.1),inset 0 0 16px rgba(0,255,200,.04)}
-.qf.nm{font-size:13px;letter-spacing:2px;color:rgba(200,230,255,.9);font-family:'Share Tech Mono',monospace}
-.qjoin{width:100%;padding:15px;background:transparent;border:2px solid var(--qc);color:var(--qc);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:4px;text-transform:uppercase;cursor:pointer;transition:all .25s;margin-top:2px}
-.qjoin:hover:not(:disabled){background:rgba(0,255,200,.08);box-shadow:0 0 36px rgba(0,255,200,.22)}
-.qjoin:disabled{opacity:.5;cursor:not-allowed}
-.qerr{display:none;margin-top:10px;padding:10px 14px;background:rgba(240,64,74,.12);border:1px solid rgba(240,64,74,.4);color:#f0606a;font-size:11px;letter-spacing:.5px;font-family:'Share Tech Mono',monospace;line-height:1.5}
-.bzzone{display:flex;flex-direction:column;align-items:center;gap:16px}
-.bzs{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(0,255,200,.3);font-family:'Share Tech Mono',monospace}
-.bzw{position:relative;width:190px;height:190px;display:flex;align-items:center;justify-content:center}
-.bzp{position:absolute;inset:0;border-radius:50%;border:2px solid var(--qc);opacity:0;animation:bpulse 2.2s ease-out infinite}
-.bzp:nth-child(2){animation-delay:.73s}
-.bzp:nth-child(3){animation-delay:1.46s}
-@keyframes bpulse{0%{transform:scale(.75);opacity:.45}100%{transform:scale(1.6);opacity:0}}
-.bzb{width:150px;height:150px;border-radius:50%;background:radial-gradient(circle at 36% 30%,rgba(0,255,200,.25),rgba(0,35,55,.92) 68%);border:3px solid var(--qc);color:var(--qc);font-family:'Orbitron',sans-serif;font-size:13px;font-weight:900;letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:all .15s;position:relative;z-index:1;box-shadow:0 0 50px rgba(0,255,200,.15),inset 0 0 30px rgba(0,255,200,.04)}
-.bzb:hover:not(:disabled){transform:scale(1.05);box-shadow:0 0 90px rgba(0,255,200,.35)}
-.bzb:active:not(:disabled){transform:scale(.95)}
-.bzb.fired{background:radial-gradient(circle at 36% 30%,rgba(255,0,170,.32),rgba(55,0,38,.92) 68%);border-color:var(--qp);color:var(--qp);box-shadow:0 0 80px rgba(255,0,170,.28)}
-.bzb.gone{background:radial-gradient(circle at 36% 30%,rgba(50,50,50,.2),rgba(10,10,10,.92) 68%);border-color:#222;color:#2a2a2a;cursor:not-allowed;box-shadow:none}
-.bzpos{font-size:76px;font-weight:900;line-height:1;background:linear-gradient(130deg,var(--qc),var(--ql));-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 28px rgba(0,255,200,.45));animation:pglow 2.5s ease-in-out infinite}
-@keyframes pglow{0%,100%{filter:drop-shadow(0 0 18px rgba(0,255,200,.4))}50%{filter:drop-shadow(0 0 44px rgba(0,255,200,.75))}}
-.bzplbl{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(0,255,200,.35);font-family:'Share Tech Mono',monospace;margin-top:2px}
-.bzst{font-size:10px;letter-spacing:2px;text-transform:uppercase;font-family:'Share Tech Mono',monospace}
-.bzst.idle{color:rgba(0,255,200,.45)}
-.bzst.wait{color:var(--qp)}
-.bzst.out{color:#555}
-.bzlv{background:transparent;border:1px solid rgba(255,0,170,.22);color:rgba(255,0,170,.38);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:7px 20px;cursor:pointer;transition:all .2s}
-.bzlv:hover{border-color:var(--qp);color:var(--qp)}
-.bzfl{position:fixed;inset:0;z-index:500;pointer-events:none;background:var(--qc);animation:fout .55s ease-out forwards}
-@keyframes fout{0%{opacity:0}12%{opacity:.22}100%{opacity:0}}
-
-/* Session ended overlay for audience */
-.sess-ended{
-  display:none;position:fixed;inset:0;z-index:200;
-  background:rgba(1,5,9,.95);
-  align-items:center;justify-content:center;
-  flex-direction:column;gap:16px;
-  font-family:'Orbitron',sans-serif;
-  text-align:center;padding:32px;
+/* Sidebar */
+.adm-sidebar { border-right: 1px solid var(--bdr); display: flex; flex-direction: column; overflow: hidden; }
+.adm-sec { padding: 15px; border-bottom: 1px solid var(--bdr); }
+.adm-sec-title {
+  font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--dim); margin-bottom: 10px;
 }
-.sess-ended.show{display:flex}
-.sess-ended-title{font-size:22px;font-weight:900;letter-spacing:4px;color:var(--qp)}
-.sess-ended-sub{font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.4);font-family:'Share Tech Mono',monospace}
-.sess-ended-btn{margin-top:8px;padding:12px 28px;background:transparent;border:2px solid var(--qc);color:var(--qc);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:all .25s}
-.sess-ended-btn:hover{background:rgba(0,255,200,.1)}
+.adm-input {
+  width: 100%; padding: 9px 11px;
+  background: #060809; border: 1px solid var(--bdr);
+  color: var(--txt); font-size: 13px;
+  outline: none; transition: border-color .2s;
+}
+.adm-input:focus { border-color: var(--green); }
+.adm-btn {
+  display: block; width: 100%; padding: 9px; margin-top: 7px;
+  background: transparent; border: 1px solid var(--green); color: var(--green);
+  font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+  transition: all .2s;
+}
+.adm-btn:hover { background: var(--green); color: #000; }
+.adm-btn.red   { border-color: var(--red);   color: var(--red); }
+.adm-btn.red:hover { background: var(--red); color: #fff; }
+.adm-btn.sm    { width: auto; padding: 5px 10px; font-size: 9px; margin-top: 0; }
+
+.sess-list { flex: 1; overflow-y: auto; padding: 8px; }
+.sess-item {
+  padding: 10px 12px; margin-bottom: 6px;
+  background: #060809; border: 1px solid var(--bdr);
+  cursor: pointer; position: relative;
+  transition: border-color .15s;
+}
+.sess-item:hover, .sess-item.sel { border-color: var(--green); }
+.sess-item.sel::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; background: var(--green);
+}
+.sess-item-name  { font-size: 13px; color: var(--txt); margin-bottom: 2px; }
+.sess-item-code  { display: block; font-size: 20px; letter-spacing: 7px; color: var(--green); font-weight: 700; margin: 3px 0; }
+.sess-item-meta  { font-size: 10px; color: var(--dim); }
+.dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; vertical-align: middle; margin-right: 4px; }
+.dot-live   { background: var(--green); animation: dotpulse 1.5s ease-in-out infinite; }
+.dot-closed { background: var(--dim); }
+@keyframes dotpulse { 0%, 100% { opacity: 1; } 50% { opacity: .2; } }
+
+/* Main area */
+.adm-main { display: flex; flex-direction: column; overflow: hidden; }
+.adm-tabs {
+  display: flex; align-items: center;
+  border-bottom: 1px solid var(--bdr);
+  background: var(--panel); padding: 0 20px; flex-shrink: 0;
+}
+.adm-tab {
+  padding: 13px 14px; background: none;
+  border: none; border-bottom: 2px solid transparent;
+  color: var(--dim); font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+  transition: all .2s;
+}
+.adm-tab.on    { color: var(--green); border-bottom-color: var(--green); }
+.adm-tab:hover:not(.on) { color: var(--txt); }
+.adm-tab-right { margin-left: auto; display: flex; gap: 7px; align-items: center; }
+
+.adm-content { flex: 1; overflow-y: auto; padding: 20px 24px; }
+.content-hd   { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--dim); margin-bottom: 14px; }
+.content-empty { text-align: center; padding: 55px 20px; color: var(--dim); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
+
+/* Queue cards */
+.q-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 9px; }
+.q-card { background: var(--panel); border: 1px solid var(--bdr); padding: 12px; position: relative; }
+.q-num  { position: absolute; top: 6px; right: 8px; font-size: 24px; font-weight: 700; color: var(--green); opacity: .15; }
+.q-name { font-size: 14px; color: var(--txt); }
+.q-time { font-size: 10px; color: var(--dim); margin-top: 2px; }
+.q-act  { margin-top: 8px; }
+
+/* History table */
+.h-table { width: 100%; border-collapse: collapse; }
+.h-table th { text-align: left; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--dim); padding: 6px 8px; border-bottom: 1px solid var(--bdr); }
+.h-table td { padding: 8px 8px; font-size: 12px; border-bottom: 1px solid #0a0e14; vertical-align: middle; }
+.h-table tr:hover td { background: #0a0e14; }
+.badge { display: inline-block; width: 22px; height: 22px; line-height: 22px; text-align: center; background: #131d2a; color: var(--green); font-size: 10px; font-weight: 700; }
+.tag-dismissed { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--dim); padding: 2px 6px; border: 1px solid var(--bdr); }
+.tag-active    { font-size: 10px; color: var(--green); }
+
+/* QR panel */
+.qr-panel { background: var(--panel); border: 1px solid var(--bdr); padding: 20px; text-align: center; display: inline-block; }
+.qr-panel-hd   { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
+.qr-img-wrap   { display: inline-block; padding: 10px; background: #fff; margin-bottom: 10px; }
+.qr-hint       { font-size: 10px; color: var(--green); margin-bottom: 6px; }
+.qr-url        { font-size: 9px; color: var(--dim); word-break: break-all; }
+
+/* ═══════════════════════════════════════════════════════
+   AUDIENCE PAGE
+═══════════════════════════════════════════════════════ */
+#pg-audience {
+  background: var(--black);
+  align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+  font-family: 'Orbitron', sans-serif;
+}
+#stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+.star {
+  position: absolute; border-radius: 50%; background: #fff;
+  animation: twinkle var(--sd) var(--ss) infinite alternate ease-in-out;
+}
+@keyframes twinkle {
+  from { opacity: var(--sa); transform: scale(1); }
+  to   { opacity: var(--sb); transform: scale(1.9); }
+}
+.grid-floor {
+  position: fixed; bottom: 0; left: 0; right: 0; height: 40vh;
+  perspective: 480px; pointer-events: none; z-index: 0;
+}
+.grid-floor-inner {
+  width: 100%; height: 100%;
+  background:
+    linear-gradient(rgba(0,255,200,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,255,200,.05) 1px, transparent 1px);
+  background-size: 50px 50px;
+  transform: rotateX(68deg); transform-origin: bottom;
+  animation: gfpulse 5s ease-in-out infinite;
+}
+@keyframes gfpulse { 0%, 100% { opacity: .38; } 50% { opacity: .8; } }
+.ring {
+  position: fixed; border-radius: 50%; border: 1px solid;
+  pointer-events: none; left: 50%; top: 46%; opacity: 0;
+  animation: ringout var(--rd) var(--rs) ease-out infinite;
+}
+@keyframes ringout {
+  0%   { transform: translate(-50%,-50%) scale(.12); opacity: .6; }
+  100% { transform: translate(-50%,-50%) scale(4.2);  opacity: 0; }
+}
+
+.aud-wrap {
+  position: relative; z-index: 10;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 20px; padding: 28px; width: 100%; max-width: 460px;
+}
+.aud-title {
+  font-size: clamp(24px, 7vw, 52px); font-weight: 900;
+  letter-spacing: 9px; text-transform: uppercase;
+  background: linear-gradient(130deg, var(--cyan), var(--blue));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 20px rgba(0,255,200,.28));
+  animation: titlebob 3.5s ease-in-out infinite;
+}
+@keyframes titlebob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+.aud-card {
+  width: 100%;
+  background: rgba(0,13,30,.78);
+  border: 1px solid rgba(0,255,200,.14);
+  backdrop-filter: blur(14px);
+  padding: 24px; position: relative; overflow: hidden;
+}
+.aud-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  animation: cardscan 2.3s linear infinite;
+}
+@keyframes cardscan { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+.aud-label { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: rgba(0,255,200,.35); font-family: 'Share Tech Mono', monospace; margin-bottom: 6px; }
+.aud-field {
+  width: 100%; padding: 11px;
+  background: rgba(0,255,200,.03); border: 1px solid rgba(0,255,200,.2);
+  color: var(--cyan); font-family: 'Orbitron', sans-serif;
+  font-size: 23px; font-weight: 700; letter-spacing: 10px;
+  text-align: center; text-transform: uppercase;
+  outline: none; transition: all .3s; margin-bottom: 14px;
+}
+.aud-field::placeholder { color: rgba(0,255,200,.13); font-size: 10px; letter-spacing: 3px; font-weight: 400; }
+.aud-field:focus { border-color: var(--cyan); box-shadow: 0 0 22px rgba(0,255,200,.07); }
+.aud-field.name { font-size: 13px; letter-spacing: 2px; color: rgba(200,225,255,.9); font-family: 'Share Tech Mono', monospace; }
+.aud-join-btn {
+  width: 100%; padding: 13px;
+  background: transparent; border: 2px solid var(--cyan); color: var(--cyan);
+  font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 700;
+  letter-spacing: 4px; text-transform: uppercase;
+  transition: all .25s; margin-top: 2px;
+}
+.aud-join-btn:hover:not(:disabled) { background: rgba(0,255,200,.07); box-shadow: 0 0 28px rgba(0,255,200,.17); }
+.aud-join-btn:disabled { opacity: .42; cursor: not-allowed; }
+.aud-err {
+  display: none; margin-top: 9px; padding: 9px 12px;
+  background: rgba(240,64,74,.1); border: 1px solid rgba(240,64,74,.3);
+  color: #f06068; font-size: 11px; font-family: 'Share Tech Mono', monospace; line-height: 1.5;
+}
+
+/* Buzz zone */
+.buzz-zone { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.buzz-sess-lbl { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: rgba(0,255,200,.26); font-family: 'Share Tech Mono', monospace; }
+.buzz-ring-wrap { position: relative; width: 183px; height: 183px; display: flex; align-items: center; justify-content: center; }
+.buzz-pulse { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--cyan); opacity: 0; animation: bpulse 2.3s ease-out infinite; }
+.buzz-pulse:nth-child(2) { animation-delay: .77s; }
+.buzz-pulse:nth-child(3) { animation-delay: 1.54s; }
+@keyframes bpulse { 0% { transform: scale(.72); opacity: .4; } 100% { transform: scale(1.65); opacity: 0; } }
+.buzz-btn {
+  width: 145px; height: 145px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(0,255,200,.2), rgba(0,32,50,.94) 68%);
+  border: 3px solid var(--cyan); color: var(--cyan);
+  font-family: 'Orbitron', sans-serif; font-size: 13px; font-weight: 900;
+  letter-spacing: 3px; text-transform: uppercase;
+  transition: all .15s; position: relative; z-index: 1;
+  box-shadow: 0 0 44px rgba(0,255,200,.12), inset 0 0 26px rgba(0,255,200,.04);
+}
+.buzz-btn:hover:not(:disabled) { transform: scale(1.06); box-shadow: 0 0 80px rgba(0,255,200,.3); }
+.buzz-btn:active:not(:disabled) { transform: scale(.95); }
+.buzz-btn.fired     { background: radial-gradient(circle at 35% 30%, rgba(255,0,170,.28), rgba(50,0,34,.94) 68%); border-color: var(--pink); color: var(--pink); box-shadow: 0 0 70px rgba(255,0,170,.24); }
+.buzz-btn.dismissed { background: radial-gradient(circle at 35% 30%, rgba(35,35,35,.2), rgba(7,7,7,.94) 68%); border-color: #181818; color: #1e1e1e; cursor: not-allowed; box-shadow: none; }
+.buzz-pos { text-align: center; }
+.buzz-pos-num { font-size: 70px; font-weight: 900; line-height: 1; background: linear-gradient(130deg, var(--cyan), var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: posglow 2.5s ease-in-out infinite; }
+@keyframes posglow { 0%, 100% { filter: drop-shadow(0 0 14px rgba(0,255,200,.35)); } 50% { filter: drop-shadow(0 0 38px rgba(0,255,200,.68)); } }
+.buzz-pos-lbl { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: rgba(0,255,200,.28); font-family: 'Share Tech Mono', monospace; margin-top: 2px; }
+.buzz-status { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; font-family: 'Share Tech Mono', monospace; }
+.buzz-status.idle    { color: rgba(0,255,200,.4); }
+.buzz-status.waiting { color: var(--pink); }
+.buzz-status.out     { color: #2e2e2e; }
+.buzz-leave-btn {
+  background: transparent; border: 1px solid rgba(255,0,170,.18);
+  color: rgba(255,0,170,.32); font-family: 'Share Tech Mono', monospace;
+  font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+  padding: 7px 18px; transition: all .2s;
+}
+.buzz-leave-btn:hover { border-color: var(--pink); color: var(--pink); }
+.flash { position: fixed; inset: 0; z-index: 999; pointer-events: none; background: var(--cyan); animation: flashout .5s ease-out forwards; }
+@keyframes flashout { 0% { opacity: 0; } 10% { opacity: .18; } 100% { opacity: 0; } }
+
+/* Session ended overlay */
+.sess-over {
+  display: none; position: fixed; inset: 0; z-index: 300;
+  background: rgba(1,5,9,.97);
+  align-items: center; justify-content: center; flex-direction: column;
+  gap: 14px; font-family: 'Orbitron', sans-serif; text-align: center; padding: 30px;
+}
+.sess-over.show { display: flex; }
+.sess-over-title { font-size: 20px; font-weight: 900; letter-spacing: 4px; color: var(--pink); }
+.sess-over-sub   { font-size: 10px; letter-spacing: 2px; color: rgba(255,255,255,.3); font-family: 'Share Tech Mono', monospace; }
+.sess-over-btn   { margin-top: 10px; padding: 12px 26px; background: transparent; border: 2px solid var(--cyan); color: var(--cyan); font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; transition: all .25s; }
+.sess-over-btn:hover { background: rgba(0,255,200,.08); }
 </style>
 </head>
 <body>
 
-<!-- ADMIN PAGE -->
-<div id="pg-admin" class="page active">
-  <div class="topbar">
-    <span class="logo">BUZZSYS // ADMIN</span>
-    <span class="sub">Control Panel</span>
+<!-- ══════════════════════════════════
+     LOGIN PAGE
+══════════════════════════════════ -->
+<div id="pg-login" class="page">
+  <div class="login-box" id="login-box">
+    <div class="login-title">BuzzSys</div>
+    <div class="login-sub">Admin Portal</div>
+    <label class="login-label">Password</label>
+    <input id="pwd" class="login-input" type="password" placeholder="Enter password…"
+           autocomplete="off"
+           onkeydown="if(event.key==='Enter') doLogin()">
+    <div class="login-err" id="login-err"></div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Unlock Admin</button>
   </div>
-  <div class="abody">
-    <div class="sidebar">
-      <div class="sec">
-        <div class="sec-title">New Session</div>
-        <input id="inp" class="ai" placeholder="Session name…" onkeydown="if(event.key==='Enter')createSess()"/>
-        <button class="abtn" onclick="createSess()">Create Session</button>
+</div>
+
+<!-- ══════════════════════════════════
+     ADMIN PAGE
+══════════════════════════════════ -->
+<div id="pg-admin" class="page">
+  <div class="adm-topbar">
+    <span class="adm-logo">BuzzSys // Admin</span>
+    <button class="adm-lock-btn" onclick="doLock()">🔒 Lock</button>
+  </div>
+
+  <div class="adm-body">
+    <!-- Sidebar -->
+    <div class="adm-sidebar">
+      <div class="adm-sec">
+        <div class="adm-sec-title">New Session</div>
+        <input id="new-sess-name" class="adm-input" placeholder="Session name…"
+               onkeydown="if(event.key==='Enter') createSession()">
+        <button class="adm-btn" onclick="createSession()">+ Create Session</button>
       </div>
-      <div class="sec" style="flex:1;overflow:hidden;display:flex;flex-direction:column;padding-bottom:0">
-        <div class="sec-title">Sessions</div>
-        <div class="slist" id="slist"><div class="empty">Connecting…</div></div>
-      </div>
-    </div>
-    <div class="amain">
-      <div class="tabs">
-        <button class="tab on" id="tq" onclick="setTab('queue')">Live Queue</button>
-        <button class="tab"    id="tl" onclick="setTab('log')">History Log</button>
-        <button class="tab"    id="tqr" onclick="setTab('qr')">QR Code</button>
-        <div class="tabr" id="tabr" style="display:none">
-          <button class="abtn s" onclick="clearQ()">Clear Queue</button>
-          <button class="abtn s r" id="btnclose" onclick="closeSess()">End Session</button>
+      <div class="adm-sec" style="flex:1;overflow:hidden;display:flex;flex-direction:column;padding-bottom:0">
+        <div class="adm-sec-title">Sessions</div>
+        <div class="sess-list" id="sess-list">
+          <div class="content-empty">Loading…</div>
         </div>
       </div>
-      <div class="acontent" id="content">
-        <div class="empty" style="margin-top:70px">Select or create a session</div>
+    </div>
+
+    <!-- Main -->
+    <div class="adm-main">
+      <div class="adm-tabs">
+        <button class="adm-tab on" id="tab-queue" onclick="setTab('queue')">Live Queue</button>
+        <button class="adm-tab"    id="tab-log"   onclick="setTab('log')">History</button>
+        <button class="adm-tab"    id="tab-qr"    onclick="setTab('qr')">QR Code</button>
+        <div class="adm-tab-right" id="tab-actions" style="display:none">
+          <button class="adm-btn sm" onclick="clearQueue()">Clear Queue</button>
+          <button class="adm-btn sm red" id="end-sess-btn" onclick="endSession()">End Session</button>
+        </div>
+      </div>
+      <div class="adm-content" id="adm-content">
+        <div class="content-empty" style="margin-top:60px">← Select or create a session</div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- AUDIENCE PAGE -->
+<!-- ══════════════════════════════════
+     AUDIENCE PAGE
+══════════════════════════════════ -->
 <div id="pg-audience" class="page">
   <div id="stars"></div>
-  <div class="floor"><div class="floor-i"></div></div>
-  <div class="ring" style="width:260px;height:260px;border-color:var(--qc);--rd:4.5s;--rs:0s"></div>
-  <div class="ring" style="width:260px;height:260px;border-color:var(--ql);--rd:5.8s;--rs:1.4s"></div>
-  <div class="ring" style="width:260px;height:260px;border-color:var(--qp);--rd:7.2s;--rs:2.8s"></div>
+  <div class="grid-floor"><div class="grid-floor-inner"></div></div>
+  <div class="ring" style="width:255px;height:255px;border-color:var(--cyan);--rd:4.5s;--rs:0s"></div>
+  <div class="ring" style="width:255px;height:255px;border-color:var(--blue);--rd:6s;--rs:1.5s"></div>
+  <div class="ring" style="width:255px;height:255px;border-color:var(--pink);--rd:7.5s;--rs:3s"></div>
 
-  <div class="qwrap">
-    <div class="qtitle">BUZZER</div>
-    <div class="qcard" id="jpanel">
-      <div class="qlbl">Your Name</div>
-      <input class="qf nm" id="aname" placeholder="Enter your name…" onkeydown="if(event.key==='Enter')audJoin()"/>
-      <div class="qlbl">Session Code</div>
-      <input class="qf" id="acode" placeholder="XXXX" maxlength="4"
+  <div class="aud-wrap">
+    <div class="aud-title">BUZZER</div>
+
+    <!-- Join form -->
+    <div class="aud-card" id="join-panel">
+      <div class="aud-label">Your Name</div>
+      <input class="aud-field name" id="aud-name" placeholder="Enter your name…"
+             onkeydown="if(event.key==='Enter') joinSession()">
+      <div class="aud-label">Session Code</div>
+      <input class="aud-field" id="aud-code" placeholder="XXXX" maxlength="4"
              oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
-             onkeydown="if(event.key==='Enter')audJoin()"/>
-      <div class="qerr" id="aerr"></div>
-      <button class="qjoin" id="jbtn" onclick="audJoin()">Join Session</button>
+             onkeydown="if(event.key==='Enter') joinSession()">
+      <div class="aud-err" id="aud-err"></div>
+      <button class="aud-join-btn" id="join-btn" onclick="joinSession()">Join Session</button>
     </div>
 
-    <div class="bzzone" id="bpanel" style="display:none">
-      <div class="bzs" id="bslbl"></div>
-      <div class="bzw">
-        <div class="bzp"></div><div class="bzp"></div><div class="bzp"></div>
-        <button class="bzb" id="bzb" onclick="audBuzz()">BUZZ</button>
+    <!-- Buzz zone -->
+    <div class="buzz-zone" id="buzz-panel" style="display:none">
+      <div class="buzz-sess-lbl" id="buzz-sess-lbl"></div>
+      <div class="buzz-ring-wrap">
+        <div class="buzz-pulse"></div>
+        <div class="buzz-pulse"></div>
+        <div class="buzz-pulse"></div>
+        <button class="buzz-btn" id="buzz-btn" onclick="doBuzz()">BUZZ</button>
       </div>
-      <div id="posblk" style="display:none;text-align:center">
-        <div class="bzpos" id="posnum">#1</div>
-        <div class="bzplbl">your position in queue</div>
+      <div class="buzz-pos" id="buzz-pos" style="display:none">
+        <div class="buzz-pos-num" id="buzz-pos-num">#1</div>
+        <div class="buzz-pos-lbl">position in queue</div>
       </div>
-      <div class="bzst idle" id="bzst">Ready · tap to buzz</div>
-      <button class="bzlv" onclick="audLeave()">Leave Session</button>
+      <div class="buzz-status idle" id="buzz-status">Ready · tap to buzz</div>
+      <button class="buzz-leave-btn" onclick="leaveSession()">Leave Session</button>
     </div>
   </div>
 
-  <!-- Session ended overlay -->
-  <div class="sess-ended" id="sess-ended">
-    <div class="sess-ended-title">SESSION ENDED</div>
-    <div class="sess-ended-sub">The host has closed this session</div>
-    <button class="sess-ended-btn" onclick="audLeave()">Join Another Session</button>
+  <!-- Session closed overlay -->
+  <div class="sess-over" id="sess-over">
+    <div class="sess-over-title">SESSION ENDED</div>
+    <div class="sess-over-sub">The host has closed this session</div>
+    <button class="sess-over-btn" onclick="leaveSession()">Join Another</button>
   </div>
 </div>
 
 <script>
-/* ── Helpers ─────────────────────────────── */
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-function genCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<4;i++)s+=c[Math.floor(Math.random()*c.length)];return s}
-function tsMs(ts){if(!ts)return 0;return ts.toMillis?ts.toMillis():Number(ts)}
-function fmtT(ts){if(!ts)return'—';const d=ts.toDate?ts.toDate():new Date(ts);return d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
-function fmtD(ts){if(!ts)return'—';const d=ts.toDate?ts.toDate():new Date(ts);return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
-const TS=()=>firebase.firestore.FieldValue.serverTimestamp();
+'use strict';
 
-/* ── Device detection: mobile always gets audience ── */
-function isMobile(){return window.innerWidth<=768||/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)}
+// ─────────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────────
 
-/* ── URL param helper: ?code=XXXX&name=John ── */
-function getParam(k){return new URLSearchParams(window.location.search).get(k)||''}
+// Password: VWXYZ@1234
+// To change: hash your password at https://emn178.github.io/online-tools/sha256.html
+const PWD_HASH  = '12ddca6641499c42bd91b35f5cf533f837e8aa17660699f9dc1ea83db9e73455';
+const MAX_TRIES = 5;
+const LOCK_SECS = 30;
 
-/* ── Router ──────────────────────────────── */
-let starsOk=false;
-function goTo(name){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('pg-'+name).classList.add('active');
-  if(name==='audience'&&!starsOk)buildStars();
-  if(name==='admin')adminBoot();
+// ─────────────────────────────────────────────────
+// UTILITIES
+// ─────────────────────────────────────────────────
+const esc   = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const TS    = () => firebase.firestore.FieldValue.serverTimestamp();
+const toMs  = ts => ts ? (ts.toMillis ? ts.toMillis() : Number(ts)) : 0;
+const param = k => new URLSearchParams(location.search).get(k) || '';
+
+function fmtTime(ts) {
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+}
+function fmtDate(ts) {
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+}
+function genCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:4}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+}
+function isMobile() {
+  return window.innerWidth <= 768 || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
 
-/* ── Stars ───────────────────────────────── */
-function buildStars(){
-  const w=document.getElementById('stars');
-  for(let i=0;i<100;i++){
-    const el=document.createElement('div');el.className='star';
-    const sz=Math.random()*2+1;
-    el.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--sd:${(Math.random()*4+2).toFixed(1)}s;--ss:${(Math.random()*7).toFixed(1)}s;--sa:${(Math.random()*.1).toFixed(2)};--sb:${(Math.random()*.65+.1).toFixed(2)}`;
-    w.appendChild(el);
+// ─────────────────────────────────────────────────
+// ROUTING
+// ─────────────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('pg-' + name).classList.add('active');
+  if (name === 'audience' && !window._starsBuilt) buildStars();
+  if (name === 'admin') adminInit();
+}
+
+// ─────────────────────────────────────────────────
+// STARS (audience background)
+// ─────────────────────────────────────────────────
+function buildStars() {
+  const container = document.getElementById('stars');
+  for (let i = 0; i < 110; i++) {
+    const s  = document.createElement('div');
+    const sz = Math.random() * 2 + 0.8;
+    s.className = 'star';
+    s.style.cssText =
+      `width:${sz}px;height:${sz}px;` +
+      `left:${Math.random()*100}%;top:${Math.random()*100}%;` +
+      `--sd:${(Math.random()*4+1.5).toFixed(1)}s;` +
+      `--ss:${(Math.random()*6).toFixed(1)}s;` +
+      `--sa:${(Math.random()*.07).toFixed(3)};` +
+      `--sb:${(Math.random()*.6+.1).toFixed(3)}`;
+    container.appendChild(s);
   }
-  starsOk=true;
+  window._starsBuilt = true;
 }
 
-/* ════════════════════════════════════════════
-   ADMIN
-════════════════════════════════════════════ */
-const A={selId:null,tab:'queue',_subs:[]};
-function killAll(){A._subs.forEach(fn=>{try{fn()}catch{}});A._subs=[];}
-function reg(u){if(u)A._subs.push(u);}
+// ─────────────────────────────────────────────────
+// AUTH  (SHA-256 password + brute-force lock)
+// ─────────────────────────────────────────────────
+let _fails    = 0;
+let _lockUntil = 0;
+let _lockTimer = null;
 
-// Track sessions created this browser tab so we can delete on close
-const mySessionIds=new Set();
+function loginErr(msg) {
+  const el = document.getElementById('login-err');
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
+}
+function loginBusy(busy, label) {
+  const btn = document.getElementById('login-btn');
+  btn.disabled = busy;
+  btn.textContent = busy ? 'Checking…' : (label || 'Unlock Admin');
+}
 
-function adminBoot(){
-  killAll();
-  reg(
-    db.collection('sessions').orderBy('createdAt','desc')
-      .onSnapshot(snap=>{
-        renderSess(snap.docs.map(d=>({id:d.id,...d.data()})));
-      },err=>{
-        document.getElementById('slist').innerHTML='<div class="empty">⚠ '+esc(err.message)+'</div>';
-      })
+async function doLogin() {
+  if (Date.now() < _lockUntil) return;
+  const pwd = document.getElementById('pwd').value;
+  if (!pwd) { loginErr('Please enter the password.'); return; }
+  loginBusy(true); loginErr('');
+
+  const hash = await sha256(pwd);
+  document.getElementById('pwd').value = '';
+
+  if (hash === PWD_HASH) {
+    _fails = 0;
+    sessionStorage.setItem('bz_auth', '1');
+    loginBusy(false);
+    showPage('admin');
+  } else {
+    _fails++;
+    // Shake animation
+    const box = document.getElementById('login-box');
+    box.classList.remove('shake');
+    void box.offsetWidth; // reflow
+    box.classList.add('shake');
+
+    if (_fails >= MAX_TRIES) {
+      _lockUntil = Date.now() + LOCK_SECS * 1000;
+      startLockout(LOCK_SECS);
+    } else {
+      const left = MAX_TRIES - _fails;
+      loginErr(`Wrong password — ${left} attempt${left === 1 ? '' : 's'} left.`);
+      loginBusy(false);
+      document.getElementById('pwd').focus();
+    }
+  }
+}
+
+function startLockout(secs) {
+  const btn = document.getElementById('login-btn');
+  const inp = document.getElementById('pwd');
+  let t = secs;
+
+  function tick() {
+    loginErr(`Too many attempts — locked for ${t}s`);
+    btn.textContent = `Locked (${t}s)`;
+    btn.disabled = true;
+    inp.disabled = true;
+    if (t <= 0) {
+      clearInterval(_lockTimer);
+      _fails = 0; _lockUntil = 0;
+      loginErr('');
+      loginBusy(false, 'Unlock Admin');
+      inp.disabled = false;
+      inp.focus();
+    }
+    t--;
+  }
+  tick();
+  _lockTimer = setInterval(tick, 1000);
+}
+
+function doLock() {
+  sessionStorage.removeItem('bz_auth');
+  // Mark all my sessions inactive
+  for (const id of _mySessions) {
+    db.collection('sessions').doc(id).update({ active: false }).catch(() => {});
+  }
+  _mySessions.clear();
+  adminCleanup();
+  showPage('login');
+  setTimeout(() => document.getElementById('pwd').focus(), 150);
+}
+
+// ─────────────────────────────────────────────────
+// ADMIN
+// ─────────────────────────────────────────────────
+let _subs      = [];    // all Firestore listeners
+let _contSub   = null;  // content-area listener (queue or log)
+let _selId     = null;  // selected session id
+let _tab       = 'queue';
+const _mySessions = new Set(); // sessions I created this tab
+
+function addSub(unsub) { if (unsub) _subs.push(unsub); }
+function killSubs()    { _subs.forEach(fn => { try { fn(); } catch {} }); _subs = []; }
+function killContent() { if (_contSub) { try { _contSub(); } catch {} _contSub = null; } }
+function adminCleanup() { killSubs(); killContent(); }
+
+function adminInit() {
+  adminCleanup();
+
+  // Listen to all sessions ordered by creation time
+  addSub(
+    db.collection('sessions')
+      .orderBy('createdAt', 'desc')
+      .onSnapshot(
+        snap => renderSessionList(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+        err  => {
+          document.getElementById('sess-list').innerHTML =
+            `<div class="content-empty">⚠ ${esc(err.message)}</div>`;
+        }
+      )
   );
 }
 
-function renderSess(list){
-  const el=document.getElementById('slist');
-  if(!list.length){el.innerHTML='<div class="empty">No sessions yet</div>';return;}
-  el.innerHTML=list.map(s=>`
-    <div class="sc ${A.selId===s.id?'on':''}" data-id="${s.id}" onclick="selSess('${s.id}')">
-      <div class="sname">${esc(s.name)}</div>
-      <span class="scode">${esc(s.code)}</span>
-      <div class="smeta" id="qc-${s.id}">— in queue</div>
-      <div class="smeta"><span class="dot ${s.active?'live':'closed'}"></span>${s.active?'ACTIVE':'CLOSED'}</div>
+function renderSessionList(list) {
+  const el = document.getElementById('sess-list');
+  if (!list.length) {
+    el.innerHTML = '<div class="content-empty">No sessions yet</div>';
+    return;
+  }
+  el.innerHTML = list.map(s => `
+    <div class="sess-item ${_selId === s.id ? 'sel' : ''}"
+         data-id="${s.id}" onclick="selectSession('${s.id}')">
+      <div class="sess-item-name">${esc(s.name)}</div>
+      <span class="sess-item-code">${esc(s.code)}</span>
+      <div class="sess-item-meta" id="cnt-${s.id}">— in queue</div>
+      <div class="sess-item-meta">
+        <span class="dot ${s.active ? 'dot-live' : 'dot-closed'}"></span>
+        ${s.active ? 'LIVE' : 'CLOSED'}
+      </div>
     </div>`).join('');
-  list.forEach(s=>{
-    reg(db.collection('queue').where('sessionId','==',s.id).onSnapshot(snap=>{
-      const c=document.getElementById('qc-'+s.id);
-      if(c)c.textContent=snap.size+' in queue';
-    }));
+
+  // Per-session queue-count listeners
+  list.forEach(s => {
+    addSub(
+      db.collection('queue')
+        .where('sessionId', '==', s.id)
+        .onSnapshot(snap => {
+          const el = document.getElementById('cnt-' + s.id);
+          if (el) el.textContent = snap.size + ' in queue';
+        })
+    );
   });
 }
 
-async function createSess(){
-  const inp=document.getElementById('inp');
-  const name=inp.value.trim();if(!name)return;
-  const ref=await db.collection('sessions').add({
-    name,code:genCode(),createdAt:TS(),active:true
+function selectSession(id) {
+  _selId = id;
+  document.querySelectorAll('.sess-item')
+    .forEach(el => el.classList.toggle('sel', el.dataset.id === id));
+  document.getElementById('tab-actions').style.display = 'flex';
+  loadContent();
+}
+
+function setTab(name) {
+  _tab = name;
+  ['queue', 'log', 'qr'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('on', t === name);
   });
-  inp.value='';
-  mySessionIds.add(ref.id); // track so we auto-delete on tab close
-  selSess(ref.id);
+  loadContent();
 }
 
-function selSess(id){
-  A.selId=id;
-  document.querySelectorAll('.sc').forEach(c=>c.classList.toggle('on',c.dataset.id===id));
-  document.getElementById('tabr').style.display='flex';
-  startContent();
+async function createSession() {
+  const inp  = document.getElementById('new-sess-name');
+  const name = inp.value.trim();
+  if (!name) return;
+  inp.value = '';
+  const ref = await db.collection('sessions').add({
+    name, code: genCode(), active: true, createdAt: TS()
+  });
+  _mySessions.add(ref.id);
+  selectSession(ref.id);
 }
 
-function setTab(t){
-  A.tab=t;
-  document.getElementById('tq').classList.toggle('on',t==='queue');
-  document.getElementById('tl').classList.toggle('on',t==='log');
-  document.getElementById('tqr').classList.toggle('on',t==='qr');
-  startContent();
+async function endSession() {
+  if (!_selId) return;
+  await db.collection('sessions').doc(_selId).update({ active: false });
+  const snap = await db.collection('queue').where('sessionId', '==', _selId).get();
+  const b = db.batch();
+  snap.forEach(d => b.delete(d.ref));
+  await b.commit();
 }
 
-async function closeSess(){
-  if(!A.selId)return;
-  await db.collection('sessions').doc(A.selId).update({active:false});
-  // Also clear the queue
-  const snap=await db.collection('queue').where('sessionId','==',A.selId).get();
-  const b=db.batch();snap.forEach(d=>b.delete(d.ref));await b.commit();
+async function clearQueue() {
+  if (!_selId) return;
+  const snap = await db.collection('queue').where('sessionId', '==', _selId).get();
+  const b = db.batch();
+  snap.forEach(d => b.delete(d.ref));
+  await b.commit();
 }
 
-async function clearQ(){
-  if(!A.selId)return;
-  const snap=await db.collection('queue').where('sessionId','==',A.selId).get();
-  const b=db.batch();snap.forEach(d=>b.delete(d.ref));await b.commit();
-}
-
-async function dismiss(id){
+async function dismissEntry(id) {
   await db.collection('queue').doc(id).delete();
-  try{await db.collection('log').doc(id).update({dismissed:true});}catch{}
+  try { await db.collection('log').doc(id).update({ dismissed: true }); } catch {}
 }
 
-/* Auto-delete sessions when admin closes the tab */
-async function cleanupMySessions(){
-  const promises=[];
-  for(const id of mySessionIds){
-    // Mark inactive and delete queue entries
-    promises.push(
-      db.collection('sessions').doc(id).update({active:false}).catch(()=>{})
-    );
-    promises.push(
-      db.collection('queue').where('sessionId','==',id).get()
-        .then(snap=>{const b=db.batch();snap.forEach(d=>b.delete(d.ref));return b.commit();})
-        .catch(()=>{})
-    );
-  }
-  await Promise.all(promises);
-}
+function loadContent() {
+  killContent();
+  if (!_selId) return;
 
-window.addEventListener('beforeunload',()=>{
-  // Synchronous beacon approach for reliability on tab close
-  if(mySessionIds.size===0)return;
-  // Mark sessions inactive synchronously using sendBeacon isn't possible with Firestore,
-  // so we use the best available: fire-and-forget + keepalive
-  for(const id of mySessionIds){
-    db.collection('sessions').doc(id).update({active:false}).catch(()=>{});
-  }
-});
+  const sid     = _selId;
+  const content = document.getElementById('adm-content');
+  content.innerHTML = '<div class="content-empty">Loading…</div>';
 
-// Also handle visibility change (phone screen off / tab hidden)
-document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='hidden'&&mySessionIds.size>0){
-    for(const id of mySessionIds){
-      db.collection('sessions').doc(id).update({active:false}).catch(()=>{});
-    }
-  }
-  // When tab becomes visible again, re-activate if we're still here
-  if(document.visibilityState==='visible'&&mySessionIds.size>0){
-    for(const id of mySessionIds){
-      db.collection('sessions').doc(id).update({active:true}).catch(()=>{});
-    }
-  }
-});
+  db.collection('sessions').doc(sid).get().then(sdoc => {
+    if (!sdoc.exists) return;
+    const sess = sdoc.data();
+    document.getElementById('end-sess-btn').style.display = sess.active ? 'inline-block' : 'none';
 
-/* Content listener */
-let _cu=null;
-function stopContent(){if(_cu){try{_cu()}catch{}_cu=null;}}
+    if (_tab === 'qr') { renderQR(sess, sid, content); return; }
 
-function startContent(){
-  stopContent();
-  if(!A.selId)return;
-  const sid=A.selId;
-  const content=document.getElementById('content');
-  content.innerHTML='<div class="empty">Loading…</div>';
+    const col = _tab === 'queue' ? 'queue' : 'log';
+    const dir = _tab === 'queue' ? 1 : -1;  // queue: oldest-first; log: newest-first
 
-  db.collection('sessions').doc(sid).get().then(sdoc=>{
-    if(!sdoc.exists)return;
-    const sess=sdoc.data();
-    document.getElementById('btnclose').style.display=sess.active?'inline-block':'none';
+    // No .orderBy() → no composite index needed; sort client-side
+    _contSub = db.collection(col)
+      .where('sessionId', '==', sid)
+      .onSnapshot(
+        snap => {
+          const rows = snap.docs
+            .map(d => ({ id: d.id, ...d.data() }))
+            .sort((a, b) => (toMs(a.buzzedAt) - toMs(b.buzzedAt)) * dir);
 
-    if(A.tab==='qr'){
-      renderQR(sess,sid);
-      return;
-    }
+          if (_tab === 'queue') {
+            let h = `<div class="content-hd">Live Queue — ${esc(sess.name)} [${esc(sess.code)}] — ${rows.length} waiting</div>`;
+            if (!rows.length) {
+              h += '<div class="content-empty">Queue is empty</div>';
+            } else {
+              h += '<div class="q-grid">' +
+                rows.map((e, i) => `
+                  <div class="q-card">
+                    <div class="q-num">#${i+1}</div>
+                    <div class="q-name">${esc(e.name)}</div>
+                    <div class="q-time">${fmtTime(e.buzzedAt)}</div>
+                    <div class="q-act">
+                      <button class="adm-btn sm red" onclick="dismissEntry('${e.id}')">Dismiss</button>
+                    </div>
+                  </div>`).join('') + '</div>';
+            }
+            content.innerHTML = h;
 
-    const col=A.tab==='queue'?'queue':'log';
-    const dir=A.tab==='queue'?1:-1;
-
-    _cu=db.collection(col).where('sessionId','==',sid)
-      .onSnapshot(snap=>{
-        const rows=snap.docs
-          .map(d=>({id:d.id,...d.data()}))
-          .sort((a,b)=>(tsMs(a.buzzedAt)-tsMs(b.buzzedAt))*dir);
-
-        if(A.tab==='queue'){
-          let h=`<div class="ct">Live Queue — ${esc(sess.name)} [${esc(sess.code)}] — ${rows.length} waiting</div>`;
-          if(!rows.length){
-            h+='<div class="empty">Queue is empty — waiting for buzzes</div>';
-          }else{
-            h+='<div class="qg">'+rows.map((e,i)=>`
-              <div class="qc">
-                <div class="qnum">#${i+1}</div>
-                <div class="qname">${esc(e.name)}</div>
-                <div class="qtime">${fmtT(e.buzzedAt)}</div>
-                <div class="qact"><button class="abtn s r" onclick="dismiss('${e.id}')">Dismiss</button></div>
-              </div>`).join('')+'</div>';
+          } else {
+            let h = `<div class="content-hd">History — ${esc(sess.name)} — ${rows.length} total</div>`;
+            if (!rows.length) {
+              h += '<div class="content-empty">No events yet</div>';
+            } else {
+              h += `<table class="h-table">
+                <thead><tr><th>#</th><th>Name</th><th>Date</th><th>Time</th><th>Status</th></tr></thead>
+                <tbody>` +
+                rows.map(e => `<tr>
+                  <td><span class="badge">${e.position || '?'}</span></td>
+                  <td style="color:var(--txt);font-weight:500">${esc(e.name)}</td>
+                  <td style="color:var(--dim)">${fmtDate(e.buzzedAt)}</td>
+                  <td style="color:var(--dim)">${fmtTime(e.buzzedAt)}</td>
+                  <td>${e.dismissed
+                    ? '<span class="tag-dismissed">Dismissed</span>'
+                    : '<span class="tag-active">Active</span>'}</td>
+                </tr>`).join('') +
+                `</tbody></table>`;
+            }
+            content.innerHTML = h;
           }
-          content.innerHTML=h;
-        }else{
-          let h=`<div class="ct">History — ${esc(sess.name)} — ${rows.length} events</div>`;
-          if(!rows.length){
-            h+='<div class="empty">No buzz events yet</div>';
-          }else{
-            h+=`<table class="ltbl">
-              <thead><tr><th>Pos</th><th>Participant</th><th>Date</th><th>Time</th><th>Status</th></tr></thead>
-              <tbody>${rows.map(e=>`<tr>
-                <td><span class="lbadge">#${e.position||'?'}</span></td>
-                <td style="color:var(--at);font-weight:500">${esc(e.name)}</td>
-                <td style="color:var(--am)">${fmtD(e.buzzedAt)}</td>
-                <td style="color:var(--am)">${fmtT(e.buzzedAt)}</td>
-                <td>${e.dismissed?'<span class="tdis">Dismissed</span>':'<span class="tact">Active</span>'}</td>
-              </tr>`).join('')}</tbody></table>`;
-          }
-          content.innerHTML=h;
+        },
+        err => {
+          content.innerHTML = `<div class="content-empty">⚠ ${esc(err.message)}</div>`;
         }
-      },err=>{
-        content.innerHTML='<div class="empty">⚠ Error: '+esc(err.message)+'</div>';
-      });
-  });
+      );
 
-  reg(db.collection('sessions').doc(sid).onSnapshot(sd=>{
-    if(!sd.exists)return;
-    document.getElementById('btnclose').style.display=sd.data().active?'inline-block':'none';
-  }));
+    // Watch session doc so "End Session" button stays in sync
+    addSub(
+      db.collection('sessions').doc(sid).onSnapshot(sd => {
+        if (!sd.exists) return;
+        document.getElementById('end-sess-btn').style.display =
+          sd.data().active ? 'inline-block' : 'none';
+      })
+    );
+  });
 }
 
-/* Generate QR code for a session */
-function renderQR(sess,sid){
-  const content=document.getElementById('content');
-  // Build URL with code pre-filled as param
-  const baseUrl=window.location.origin+window.location.pathname;
-  const joinUrl=baseUrl+'?code='+sess.code;
-
-  content.innerHTML=`
-    <div class="ct">QR Code — ${esc(sess.name)} [${esc(sess.code)}]</div>
+function renderQR(sess, sid, content) {
+  const url = location.origin + location.pathname + '?code=' + sess.code;
+  content.innerHTML = `
+    <div class="content-hd">QR Code — ${esc(sess.name)} [${esc(sess.code)}]</div>
     <div class="qr-panel">
-      <div class="qr-panel-title">Scan to join session instantly</div>
-      <div class="qr-wrap" id="qrdiv"></div>
-      <div class="qr-hint">Participants just need to enter their name after scanning</div>
-      <div class="qr-url">${esc(joinUrl)}</div>
+      <div class="qr-panel-hd">Scan to join instantly</div>
+      <div class="qr-img-wrap" id="qr-div"></div>
+      <div class="qr-hint">Participants only need to enter their name after scanning</div>
+      <div class="qr-url">${esc(url)}</div>
     </div>`;
-
-  // Generate QR code
-  new QRCode(document.getElementById('qrdiv'),{
-    text: joinUrl,
-    width: 200,
-    height: 200,
-    colorDark: '#000000',
-    colorLight: '#ffffff',
+  new QRCode(document.getElementById('qr-div'), {
+    text: url, width: 190, height: 190,
+    colorDark: '#000', colorLight: '#fff',
     correctLevel: QRCode.CorrectLevel.H
   });
 }
 
-/* ════════════════════════════════════════════
-   AUDIENCE
-════════════════════════════════════════════ */
-const AUD={sess:null,name:'',eid:null,buzzed:false,_sub:null,_sessSub:null};
+// Auto-close my sessions when tab closes or hides
+window.addEventListener('beforeunload', () => {
+  for (const id of _mySessions)
+    db.collection('sessions').doc(id).update({ active: false }).catch(() => {});
+});
+document.addEventListener('visibilitychange', () => {
+  if (!sessionStorage.getItem('bz_auth')) return;
+  const hiding = document.visibilityState === 'hidden';
+  for (const id of _mySessions)
+    db.collection('sessions').doc(id).update({ active: !hiding }).catch(() => {});
+});
 
-function audErr(msg){
-  const el=document.getElementById('aerr');
-  el.textContent=msg;el.style.display=msg?'block':'none';
+// ─────────────────────────────────────────────────
+// AUDIENCE
+// ─────────────────────────────────────────────────
+const aud = {
+  sess: null, name: '', entryId: null, buzzed: false,
+  qSub: null,   // queue watcher
+  sSub: null    // session watcher
+};
+
+function audErr(msg) {
+  const el = document.getElementById('aud-err');
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
 }
-function setJoinBtn(text,disabled){
-  const b=document.getElementById('jbtn');
-  b.textContent=text;b.disabled=disabled;
+function joinBtn(label, disabled) {
+  const b = document.getElementById('join-btn');
+  b.textContent = label; b.disabled = disabled;
 }
 
-async function audJoin(){
-  const name=document.getElementById('aname').value.trim();
-  const code=document.getElementById('acode').value.trim().toUpperCase();
+async function joinSession() {
+  const name = document.getElementById('aud-name').value.trim();
+  const code = document.getElementById('aud-code').value.trim().toUpperCase();
   audErr('');
 
-  if(!name){audErr('Please enter your name.');return;}
-  if(code.length!==4){audErr('Enter the 4-character session code.');return;}
+  if (!name) { audErr('Please enter your name.'); return; }
+  if (code.length !== 4) { audErr('Enter the 4-character session code.'); return; }
+  joinBtn('Checking…', true);
 
-  setJoinBtn('Checking…',true);
+  try {
+    // Search by code only (no .where active) so we can give a precise error
+    const snap = await db.collection('sessions').where('code', '==', code).get();
 
-  try{
-    const snap=await db.collection('sessions').where('code','==',code).get();
-
-    if(snap.empty){
-      audErr('No session found with code "'+code+'". Check the code and try again.');
-      setJoinBtn('Join Session',false);return;
+    if (snap.empty) {
+      audErr(`No session found with code "${code}".`);
+      joinBtn('Join Session', false);
+      return;
+    }
+    const activeDocs = snap.docs.filter(d => d.data().active === true);
+    if (!activeDocs.length) {
+      audErr(`Session "${code}" has been closed by the host.`);
+      joinBtn('Join Session', false);
+      return;
     }
 
-    const activeDocs=snap.docs.filter(d=>d.data().active===true);
-    if(!activeDocs.length){
-      audErr('Session "'+code+'" has been closed by the host.');
-      setJoinBtn('Join Session',false);return;
-    }
+    // Joined!
+    aud.sess    = { id: activeDocs[0].id, ...activeDocs[0].data() };
+    aud.name    = name;
+    aud.buzzed  = false;
+    aud.entryId = null;
 
-    AUD.sess={id:activeDocs[0].id,...activeDocs[0].data()};
-    AUD.name=name;AUD.buzzed=false;AUD.eid=null;
-
-    document.getElementById('jpanel').style.display='none';
-    document.getElementById('bpanel').style.display='flex';
-    document.getElementById('bslbl').textContent=AUD.sess.name+' · '+AUD.sess.code;
-    document.getElementById('sess-ended').classList.remove('show');
-    resetBuzz();
+    document.getElementById('join-panel').style.display = 'none';
+    document.getElementById('buzz-panel').style.display = 'flex';
+    document.getElementById('buzz-sess-lbl').textContent = aud.sess.name + ' · ' + aud.sess.code;
+    document.getElementById('sess-over').classList.remove('show');
+    resetBuzzUI();
 
     // Watch for session being closed by admin
-    if(AUD._sessSub){try{AUD._sessSub();}catch{}AUD._sessSub=null;}
-    AUD._sessSub=db.collection('sessions').doc(AUD.sess.id).onSnapshot(sd=>{
-      if(!sd.exists)return;
-      if(!sd.data().active){
-        // Session ended — show overlay
-        document.getElementById('sess-ended').classList.add('show');
-        // Stop buzz listener
-        if(AUD._sub){try{AUD._sub();}catch{}AUD._sub=null;}
-        AUD.buzzed=false;AUD.eid=null;
+    if (aud.sSub) { try { aud.sSub(); } catch {} aud.sSub = null; }
+    aud.sSub = db.collection('sessions').doc(aud.sess.id).onSnapshot(sd => {
+      if (!sd.exists || !sd.data().active) {
+        document.getElementById('sess-over').classList.add('show');
+        if (aud.qSub) { try { aud.qSub(); } catch {} aud.qSub = null; }
+        aud.buzzed = false; aud.entryId = null;
       }
     });
 
-  }catch(e){
-    console.error('audJoin:',e);
-    if(e.code==='permission-denied'||String(e.message).includes('permission')){
-      audErr('⚠ Permission denied. Ask host to fix Firestore Rules.');
-    }else if(e.code==='unavailable'){
-      audErr('⚠ No internet connection. Check your network.');
-    }else{
-      audErr('⚠ '+e.message);
-    }
-    setJoinBtn('Join Session',false);
+  } catch (e) {
+    console.error('joinSession:', e);
+    if (e.code === 'permission-denied')
+      audErr('⚠ Permission denied — set Firestore rules to allow read/write.');
+    else if (e.code === 'unavailable')
+      audErr('⚠ No internet connection.');
+    else
+      audErr('⚠ ' + e.message);
+    joinBtn('Join Session', false);
   }
 }
 
-function resetBuzz(){
-  const b=document.getElementById('bzb');
-  b.className='bzb';b.textContent='BUZZ';b.disabled=false;
-  document.getElementById('posblk').style.display='none';
-  const st=document.getElementById('bzst');
-  st.textContent='Ready · tap to buzz';st.className='bzst idle';
+function resetBuzzUI() {
+  const btn = document.getElementById('buzz-btn');
+  btn.className   = 'buzz-btn';
+  btn.textContent = 'BUZZ';
+  btn.disabled    = false;
+  document.getElementById('buzz-pos').style.display = 'none';
+  const st = document.getElementById('buzz-status');
+  st.textContent = 'Ready · tap to buzz';
+  st.className   = 'buzz-status idle';
 }
 
-async function audBuzz(){
-  if(AUD.buzzed||!AUD.sess)return;
-  const b=document.getElementById('bzb');
-  b.disabled=true;b.textContent='…';
+async function doBuzz() {
+  if (aud.buzzed || !aud.sess) return;
+  const btn = document.getElementById('buzz-btn');
+  btn.disabled = true; btn.textContent = '…';
 
-  try{
-    const qsnap=await db.collection('queue').where('sessionId','==',AUD.sess.id).get();
-    const pos=qsnap.size+1;
+  try {
+    // Position = current queue size + 1
+    const qs  = await db.collection('queue').where('sessionId', '==', aud.sess.id).get();
+    const pos = qs.size + 1;
 
-    const entry={
-      sessionId:AUD.sess.id,
-      name:AUD.name,
-      buzzedAt:TS(),
-      position:pos,
-      dismissed:false,
+    const entry = {
+      sessionId: aud.sess.id,
+      name:      aud.name,
+      buzzedAt:  TS(),
+      position:  pos,
+      dismissed: false
     };
 
-    const ref=await db.collection('queue').add(entry);
+    // Write, wait for confirmation before starting listener
+    const ref = await db.collection('queue').add(entry);
     await db.collection('log').doc(ref.id).set(entry);
 
-    AUD.eid=ref.id;AUD.buzzed=true;
+    aud.entryId = ref.id;
+    aud.buzzed  = true;
 
-    b.className='bzb fired';b.textContent='BUZZED!';b.disabled=true;
-    document.getElementById('posblk').style.display='block';
-    document.getElementById('posnum').textContent='#'+pos;
-    const st=document.getElementById('bzst');
-    st.textContent='In queue — hold tight!';st.className='bzst wait';
+    // Update UI
+    btn.className   = 'buzz-btn fired';
+    btn.textContent = 'BUZZED!';
+    btn.disabled    = true;
+    document.getElementById('buzz-pos').style.display = 'block';
+    document.getElementById('buzz-pos-num').textContent = '#' + pos;
+    const st = document.getElementById('buzz-status');
+    st.textContent = 'In queue — hold tight!';
+    st.className   = 'buzz-status waiting';
 
-    const fl=document.createElement('div');fl.className='bzfl';
-    document.body.appendChild(fl);setTimeout(()=>fl.remove(),600);
+    // Flash effect
+    const fl = document.createElement('div');
+    fl.className = 'flash';
+    document.body.appendChild(fl);
+    setTimeout(() => fl.remove(), 520);
 
-    if(AUD._sub){try{AUD._sub();}catch{}AUD._sub=null;}
-    AUD._sub=db.collection('queue')
-      .where('sessionId','==',AUD.sess.id)
-      .onSnapshot(snap=>{
-        const all=snap.docs
-          .map(d=>({id:d.id,...d.data()}))
-          .sort((a,b)=>tsMs(a.buzzedAt)-tsMs(b.buzzedAt));
+    // Watch queue for position updates and dismissal
+    if (aud.qSub) { try { aud.qSub(); } catch {} aud.qSub = null; }
+    aud.qSub = db.collection('queue')
+      .where('sessionId', '==', aud.sess.id)
+      .onSnapshot(snap => {
+        const all = snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => toMs(a.buzzedAt) - toMs(b.buzzedAt));
 
-        const mine=all.find(e=>e.id===AUD.eid);
-        if(!mine){
-          // Dismissed or cleared — let them buzz again
-          if(AUD._sub){try{AUD._sub();}catch{}AUD._sub=null;}
-          AUD.buzzed=false;AUD.eid=null;
-          b.className='bzb gone';b.textContent='DISMISSED';b.disabled=true;
-          document.getElementById('posblk').style.display='none';
-          const st=document.getElementById('bzst');
-          st.textContent='Dismissed — buzzing again in 2s…';st.className='bzst out';
-          setTimeout(()=>resetBuzz(),2000);
+        const mine = all.find(e => e.id === aud.entryId);
+
+        if (!mine) {
+          // Dismissed — stop listener, allow re-buzz after 2 s
+          if (aud.qSub) { try { aud.qSub(); } catch {} aud.qSub = null; }
+          aud.buzzed = false; aud.entryId = null;
+
+          btn.className   = 'buzz-btn dismissed';
+          btn.textContent = 'DISMISSED';
+          btn.disabled    = true;
+          document.getElementById('buzz-pos').style.display = 'none';
+          const st = document.getElementById('buzz-status');
+          st.textContent = 'Dismissed — can buzz again shortly';
+          st.className   = 'buzz-status out';
+          setTimeout(() => resetBuzzUI(), 2000);
           return;
         }
-        const idx=all.findIndex(e=>e.id===AUD.eid)+1;
-        document.getElementById('posnum').textContent='#'+idx;
-      },err=>console.error('queue watch:',err));
 
-  }catch(e){
-    console.error('buzz error:',e);
-    b.disabled=false;b.textContent='BUZZ';
+        // Live position update
+        document.getElementById('buzz-pos-num').textContent =
+          '#' + (all.findIndex(e => e.id === aud.entryId) + 1);
+      },
+      err => console.error('queue watcher:', err));
+
+  } catch (e) {
+    console.error('doBuzz:', e);
+    btn.disabled = false; btn.textContent = 'BUZZ'; btn.className = 'buzz-btn';
   }
 }
 
-function audLeave(){
-  if(AUD._sub){try{AUD._sub();}catch{}AUD._sub=null;}
-  if(AUD._sessSub){try{AUD._sessSub();}catch{}AUD._sessSub=null;}
-  AUD.sess=null;AUD.name='';AUD.eid=null;AUD.buzzed=false;
-  document.getElementById('bpanel').style.display='none';
-  document.getElementById('jpanel').style.display='block';
-  document.getElementById('sess-ended').classList.remove('show');
-  // Keep name but clear code for convenience
-  document.getElementById('acode').value='';
-  setJoinBtn('Join Session',false);
+function leaveSession() {
+  if (aud.qSub) { try { aud.qSub(); } catch {} aud.qSub = null; }
+  if (aud.sSub) { try { aud.sSub(); } catch {} aud.sSub = null; }
+  Object.assign(aud, { sess: null, name: '', entryId: null, buzzed: false, qSub: null, sSub: null });
+  document.getElementById('buzz-panel').style.display = 'none';
+  document.getElementById('join-panel').style.display = 'block';
+  document.getElementById('sess-over').classList.remove('show');
+  document.getElementById('aud-code').value = '';
+  joinBtn('Join Session', false);
   audErr('');
 }
 
-/* ════════════════════════════════════════════
-   BOOT — decide which page to show
-════════════════════════════════════════════ */
-(function boot(){
-  const code=getParam('code');   // from QR scan: ?code=XXXX
+// ─────────────────────────────────────────────────
+// BOOT  — decide which page to show
+// ─────────────────────────────────────────────────
+(function boot() {
+  const code = param('code'); // set by QR scan: ?code=XXXX
 
-  if(isMobile()){
-    // Mobile always gets audience view
-    goTo('audience');
-    // Pre-fill code if from QR scan
-    if(code){
-      document.getElementById('acode').value=code;
-      // Focus name field so they just type their name
-      setTimeout(()=>document.getElementById('aname').focus(),300);
+  if (isMobile() || code) {
+    // Mobile or QR scan → audience view
+    showPage('audience');
+    if (code) {
+      document.getElementById('aud-code').value = code;
+      setTimeout(() => document.getElementById('aud-name').focus(), 300);
     }
-  }else{
-    // Desktop — check if they came via QR link
-    if(code){
-      // Desktop via QR — still show audience
-      goTo('audience');
-      document.getElementById('acode').value=code;
-      setTimeout(()=>document.getElementById('aname').focus(),300);
-    }else{
-      // Desktop direct load — show admin
-      goTo('admin');
-    }
+    return;
+  }
+
+  // Desktop → check login
+  if (sessionStorage.getItem('bz_auth') === '1') {
+    showPage('admin');
+  } else {
+    showPage('login');
+    setTimeout(() => document.getElementById('pwd').focus(), 150);
   }
 })();
 </script>
