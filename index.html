@@ -6,13 +6,9 @@
 <title>BuzzSys</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
-<!-- Firebase v9 compat (works in plain HTML, no bundler needed) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
 <script>
-// ─── Firebase init ────────────────────────────────────────────────
 const _app = firebase.initializeApp({
   apiKey:            "AIzaSyBeTlvIU2lPUNVwKFSr7KqezCC9JJbJbsY",
   authDomain:        "buzzer-f2b72.firebaseapp.com",
@@ -22,400 +18,173 @@ const _app = firebase.initializeApp({
   appId:             "1:942193699731:web:a704201720aed264671666"
 });
 const db = firebase.firestore();
-
-// Verify connection on load
-db.collection('_ping').limit(1).get()
-  .then(() => console.log('✅ Firebase connected'))
-  .catch(e => console.error('❌ Firebase error:', e.code, e.message));
 </script>
 
 <style>
-/* ─── Reset & vars ──────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --bg:     #080b0f;
-  --panel:  #0e1318;
-  --bdr:    #1c2433;
-  --green:  #00c896;
-  --txt:    #b8cfe0;
-  --dim:    #3d5068;
-  --red:    #f0404a;
-  --black:  #010509;
-  --cyan:   #00ffc8;
-  --pink:   #ff00aa;
-  --blue:   #007bff;
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080b0f;--panel:#0e1318;--bdr:#1c2433;
+  --green:#00c896;--txt:#b8cfe0;--dim:#3d5068;--red:#f0404a;
+  --black:#010509;--cyan:#00ffc8;--pink:#ff00aa;--blue:#007bff;
 }
-html, body { height: 100%; }
-body { font-family: 'IBM Plex Mono', monospace; background: var(--bg); color: var(--txt); overflow-x: hidden; }
-button { cursor: pointer; font-family: inherit; }
-input  { font-family: inherit; }
-::-webkit-scrollbar       { width: 4px; }
-::-webkit-scrollbar-thumb { background: var(--bdr); border-radius: 2px; }
+html,body{height:100%}
+body{font-family:'IBM Plex Mono',monospace;background:var(--bg);color:var(--txt);overflow-x:hidden}
+button{cursor:pointer;font-family:inherit}
+input{font-family:inherit}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px}
+.page{display:none;min-height:100vh;flex-direction:column}.page.active{display:flex}
 
-/* ─── Page system ───────────────────────────────────── */
-.page         { display: none;  min-height: 100vh; flex-direction: column; }
-.page.active  { display: flex; }
+/* LOGIN */
+#pg-login{background:var(--bg);align-items:center;justify-content:center}
+.login-box{width:320px;background:var(--panel);border:1px solid var(--bdr);padding:36px 28px;position:relative;overflow:hidden}
+.login-box::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--green),transparent);animation:lscan 2.5s linear infinite}
+@keyframes lscan{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.login-title{font-size:13px;letter-spacing:6px;text-transform:uppercase;color:var(--green);font-weight:700;text-align:center;margin-bottom:4px}
+.login-sub{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);text-align:center;margin-bottom:28px}
+.login-label{display:block;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.login-input{width:100%;padding:10px 12px;background:#060809;border:1px solid var(--bdr);color:var(--txt);font-size:14px;letter-spacing:2px;outline:none;transition:border-color .2s}
+.login-input:focus{border-color:var(--green)}
+.login-btn{display:block;width:100%;padding:11px;margin-top:14px;background:transparent;border:1px solid var(--green);color:var(--green);font-size:10px;letter-spacing:3px;text-transform:uppercase;transition:all .2s}
+.login-btn:hover:not(:disabled){background:var(--green);color:#000}
+.login-btn:disabled{opacity:.4;cursor:not-allowed}
+.login-err{display:none;margin-top:12px;padding:9px 11px;background:rgba(240,64,74,.1);border:1px solid rgba(240,64,74,.3);color:#f06068;font-size:11px;line-height:1.5}
+@keyframes shake{0%,100%{transform:translateX(0)}25%,75%{transform:translateX(-7px)}50%{transform:translateX(7px)}}
+.shake{animation:shake .35s ease}
 
-/* ═══════════════════════════════════════════════════════
-   LOGIN PAGE
-═══════════════════════════════════════════════════════ */
-#pg-login {
-  background: var(--bg);
-  align-items: center;
-  justify-content: center;
-}
-.login-box {
-  width: 320px;
-  background: var(--panel);
-  border: 1px solid var(--bdr);
-  padding: 36px 28px;
-  position: relative;
-  overflow: hidden;
-}
-.login-box::after {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: linear-gradient(90deg, transparent, var(--green), transparent);
-  animation: lscan 2.5s linear infinite;
-}
-@keyframes lscan { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+/* ADMIN */
+#pg-admin{background:var(--bg)}
+.adm-topbar{display:flex;align-items:center;justify-content:space-between;padding:13px 24px;background:var(--panel);border-bottom:1px solid var(--bdr);flex-shrink:0}
+.adm-logo{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--green);font-weight:500}
+.adm-topbar-right{display:flex;align-items:center;gap:12px}
+.sound-toggle{padding:5px 12px;background:transparent;border:1px solid var(--bdr);color:var(--dim);font-size:9px;letter-spacing:2px;text-transform:uppercase;transition:all .2s}
+.sound-toggle.on{border-color:var(--green);color:var(--green)}
+.sound-toggle:hover{border-color:var(--green);color:var(--green)}
+.adm-lock-btn{padding:5px 12px;background:transparent;border:1px solid var(--bdr);color:var(--dim);font-size:9px;letter-spacing:2px;text-transform:uppercase;transition:all .2s}
+.adm-lock-btn:hover{border-color:var(--red);color:var(--red)}
+.adm-body{display:grid;grid-template-columns:280px 1fr;flex:1;overflow:hidden;height:calc(100vh - 51px)}
+.adm-sidebar{border-right:1px solid var(--bdr);display:flex;flex-direction:column;overflow:hidden}
+.adm-sec{padding:15px;border-bottom:1px solid var(--bdr)}
+.adm-sec-title{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+.adm-input{width:100%;padding:9px 11px;background:#060809;border:1px solid var(--bdr);color:var(--txt);font-size:13px;outline:none;transition:border-color .2s}
+.adm-input:focus{border-color:var(--green)}
+.adm-btn{display:block;width:100%;padding:9px;margin-top:7px;background:transparent;border:1px solid var(--green);color:var(--green);font-size:10px;letter-spacing:2px;text-transform:uppercase;transition:all .2s}
+.adm-btn:hover{background:var(--green);color:#000}
+.adm-btn.red{border-color:var(--red);color:var(--red)}.adm-btn.red:hover{background:var(--red);color:#fff}
+.adm-btn.sm{width:auto;padding:5px 10px;font-size:9px;margin-top:0}
+.sess-list{flex:1;overflow-y:auto;padding:8px}
+.sess-item{padding:10px 12px;margin-bottom:6px;background:#060809;border:1px solid var(--bdr);cursor:pointer;position:relative;transition:border-color .15s}
+.sess-item:hover,.sess-item.sel{border-color:var(--green)}
+.sess-item.sel::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--green)}
+.sess-item-name{font-size:13px;color:var(--txt);margin-bottom:2px}
+.sess-item-code{display:block;font-size:20px;letter-spacing:7px;color:var(--green);font-weight:700;margin:3px 0}
+.sess-item-meta{font-size:10px;color:var(--dim)}
+.dot{display:inline-block;width:6px;height:6px;border-radius:50%;vertical-align:middle;margin-right:4px}
+.dot-live{background:var(--green);animation:dotpulse 1.5s ease-in-out infinite}.dot-closed{background:var(--dim)}
+@keyframes dotpulse{0%,100%{opacity:1}50%{opacity:.2}}
+.adm-main{display:flex;flex-direction:column;overflow:hidden}
+.adm-tabs{display:flex;align-items:center;border-bottom:1px solid var(--bdr);background:var(--panel);padding:0 20px;flex-shrink:0}
+.adm-tab{padding:13px 14px;background:none;border:none;border-bottom:2px solid transparent;color:var(--dim);font-size:10px;letter-spacing:2px;text-transform:uppercase;transition:all .2s}
+.adm-tab.on{color:var(--green);border-bottom-color:var(--green)}.adm-tab:hover:not(.on){color:var(--txt)}
+.adm-tab-right{margin-left:auto;display:flex;gap:7px;align-items:center}
+.adm-content{flex:1;overflow-y:auto;padding:20px 24px}
+.content-hd{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:14px}
+.content-empty{text-align:center;padding:55px 20px;color:var(--dim);font-size:11px;letter-spacing:2px;text-transform:uppercase}
+.q-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:9px}
+.q-card{background:var(--panel);border:1px solid var(--bdr);padding:12px;position:relative}
+.q-num{position:absolute;top:6px;right:8px;font-size:24px;font-weight:700;color:var(--green);opacity:.15}
+.q-name{font-size:14px;color:var(--txt)}.q-time{font-size:10px;color:var(--dim);margin-top:2px}.q-act{margin-top:8px}
+.h-table{width:100%;border-collapse:collapse}
+.h-table th{text-align:left;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);padding:6px 8px;border-bottom:1px solid var(--bdr)}
+.h-table td{padding:8px 8px;font-size:12px;border-bottom:1px solid #0a0e14;vertical-align:middle}
+.h-table tr:hover td{background:#0a0e14}
+.badge{display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:#131d2a;color:var(--green);font-size:10px;font-weight:700}
+.tag-dismissed{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--dim);padding:2px 6px;border:1px solid var(--bdr)}
+.tag-active{font-size:10px;color:var(--green)}
+.qr-panel{background:var(--panel);border:1px solid var(--bdr);padding:20px;text-align:center;display:inline-block}
+.qr-panel-hd{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--dim);margin-bottom:12px}
+.qr-img-wrap{display:inline-block;padding:10px;background:#fff;margin-bottom:10px}
+.qr-hint{font-size:10px;color:var(--green);margin-bottom:6px}
+.qr-url{font-size:9px;color:var(--dim);word-break:break-all}
 
-.login-title {
-  font-size: 13px; letter-spacing: 6px; text-transform: uppercase;
-  color: var(--green); font-weight: 700; text-align: center; margin-bottom: 4px;
-}
-.login-sub {
-  font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
-  color: var(--dim); text-align: center; margin-bottom: 28px;
-}
-.login-label {
-  display: block; font-size: 9px; letter-spacing: 2px;
-  text-transform: uppercase; color: var(--dim); margin-bottom: 6px;
-}
-.login-input {
-  width: 100%; padding: 10px 12px;
-  background: #060809; border: 1px solid var(--bdr);
-  color: var(--txt); font-size: 14px; letter-spacing: 2px;
-  outline: none; transition: border-color .2s;
-}
-.login-input:focus { border-color: var(--green); }
-.login-btn {
-  display: block; width: 100%; padding: 11px; margin-top: 14px;
-  background: transparent; border: 1px solid var(--green); color: var(--green);
-  font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
-  transition: all .2s;
-}
-.login-btn:hover:not(:disabled) { background: var(--green); color: #000; }
-.login-btn:disabled { opacity: .4; cursor: not-allowed; }
-.login-err {
-  display: none; margin-top: 12px; padding: 9px 11px;
-  background: rgba(240,64,74,.1); border: 1px solid rgba(240,64,74,.3);
-  color: #f06068; font-size: 11px; line-height: 1.5;
-}
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25%, 75%  { transform: translateX(-7px); }
-  50%       { transform: translateX(7px); }
-}
-.shake { animation: shake .35s ease; }
-
-/* ═══════════════════════════════════════════════════════
-   ADMIN PAGE
-═══════════════════════════════════════════════════════ */
-#pg-admin { background: var(--bg); }
-
-.adm-topbar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 13px 24px;
-  background: var(--panel); border-bottom: 1px solid var(--bdr);
-  flex-shrink: 0;
-}
-.adm-logo { font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: var(--green); font-weight: 500; }
-.adm-lock-btn {
-  padding: 5px 12px; background: transparent;
-  border: 1px solid var(--bdr); color: var(--dim);
-  font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
-  transition: all .2s;
-}
-.adm-lock-btn:hover { border-color: var(--red); color: var(--red); }
-
-.adm-body {
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  flex: 1; overflow: hidden;
-  height: calc(100vh - 51px);
-}
-
-/* Sidebar */
-.adm-sidebar { border-right: 1px solid var(--bdr); display: flex; flex-direction: column; overflow: hidden; }
-.adm-sec { padding: 15px; border-bottom: 1px solid var(--bdr); }
-.adm-sec-title {
-  font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
-  color: var(--dim); margin-bottom: 10px;
-}
-.adm-input {
-  width: 100%; padding: 9px 11px;
-  background: #060809; border: 1px solid var(--bdr);
-  color: var(--txt); font-size: 13px;
-  outline: none; transition: border-color .2s;
-}
-.adm-input:focus { border-color: var(--green); }
-.adm-btn {
-  display: block; width: 100%; padding: 9px; margin-top: 7px;
-  background: transparent; border: 1px solid var(--green); color: var(--green);
-  font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
-  transition: all .2s;
-}
-.adm-btn:hover { background: var(--green); color: #000; }
-.adm-btn.red   { border-color: var(--red);   color: var(--red); }
-.adm-btn.red:hover { background: var(--red); color: #fff; }
-.adm-btn.sm    { width: auto; padding: 5px 10px; font-size: 9px; margin-top: 0; }
-
-.sess-list { flex: 1; overflow-y: auto; padding: 8px; }
-.sess-item {
-  padding: 10px 12px; margin-bottom: 6px;
-  background: #060809; border: 1px solid var(--bdr);
-  cursor: pointer; position: relative;
-  transition: border-color .15s;
-}
-.sess-item:hover, .sess-item.sel { border-color: var(--green); }
-.sess-item.sel::before {
-  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
-  width: 3px; background: var(--green);
-}
-.sess-item-name  { font-size: 13px; color: var(--txt); margin-bottom: 2px; }
-.sess-item-code  { display: block; font-size: 20px; letter-spacing: 7px; color: var(--green); font-weight: 700; margin: 3px 0; }
-.sess-item-meta  { font-size: 10px; color: var(--dim); }
-.dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; vertical-align: middle; margin-right: 4px; }
-.dot-live   { background: var(--green); animation: dotpulse 1.5s ease-in-out infinite; }
-.dot-closed { background: var(--dim); }
-@keyframes dotpulse { 0%, 100% { opacity: 1; } 50% { opacity: .2; } }
-
-/* Main area */
-.adm-main { display: flex; flex-direction: column; overflow: hidden; }
-.adm-tabs {
-  display: flex; align-items: center;
-  border-bottom: 1px solid var(--bdr);
-  background: var(--panel); padding: 0 20px; flex-shrink: 0;
-}
-.adm-tab {
-  padding: 13px 14px; background: none;
-  border: none; border-bottom: 2px solid transparent;
-  color: var(--dim); font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
-  transition: all .2s;
-}
-.adm-tab.on    { color: var(--green); border-bottom-color: var(--green); }
-.adm-tab:hover:not(.on) { color: var(--txt); }
-.adm-tab-right { margin-left: auto; display: flex; gap: 7px; align-items: center; }
-
-.adm-content { flex: 1; overflow-y: auto; padding: 20px 24px; }
-.content-hd   { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--dim); margin-bottom: 14px; }
-.content-empty { text-align: center; padding: 55px 20px; color: var(--dim); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
-
-/* Queue cards */
-.q-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 9px; }
-.q-card { background: var(--panel); border: 1px solid var(--bdr); padding: 12px; position: relative; }
-.q-num  { position: absolute; top: 6px; right: 8px; font-size: 24px; font-weight: 700; color: var(--green); opacity: .15; }
-.q-name { font-size: 14px; color: var(--txt); }
-.q-time { font-size: 10px; color: var(--dim); margin-top: 2px; }
-.q-act  { margin-top: 8px; }
-
-/* History table */
-.h-table { width: 100%; border-collapse: collapse; }
-.h-table th { text-align: left; font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--dim); padding: 6px 8px; border-bottom: 1px solid var(--bdr); }
-.h-table td { padding: 8px 8px; font-size: 12px; border-bottom: 1px solid #0a0e14; vertical-align: middle; }
-.h-table tr:hover td { background: #0a0e14; }
-.badge { display: inline-block; width: 22px; height: 22px; line-height: 22px; text-align: center; background: #131d2a; color: var(--green); font-size: 10px; font-weight: 700; }
-.tag-dismissed { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--dim); padding: 2px 6px; border: 1px solid var(--bdr); }
-.tag-active    { font-size: 10px; color: var(--green); }
-
-/* QR panel */
-.qr-panel { background: var(--panel); border: 1px solid var(--bdr); padding: 20px; text-align: center; display: inline-block; }
-.qr-panel-hd   { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--dim); margin-bottom: 12px; }
-.qr-img-wrap   { display: inline-block; padding: 10px; background: #fff; margin-bottom: 10px; }
-.qr-hint       { font-size: 10px; color: var(--green); margin-bottom: 6px; }
-.qr-url        { font-size: 9px; color: var(--dim); word-break: break-all; }
-
-/* ═══════════════════════════════════════════════════════
-   AUDIENCE PAGE
-═══════════════════════════════════════════════════════ */
-#pg-audience {
-  background: var(--black);
-  align-items: center; justify-content: center;
-  position: relative; overflow: hidden;
-  font-family: 'Orbitron', sans-serif;
-}
-#stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
-.star {
-  position: absolute; border-radius: 50%; background: #fff;
-  animation: twinkle var(--sd) var(--ss) infinite alternate ease-in-out;
-}
-@keyframes twinkle {
-  from { opacity: var(--sa); transform: scale(1); }
-  to   { opacity: var(--sb); transform: scale(1.9); }
-}
-.grid-floor {
-  position: fixed; bottom: 0; left: 0; right: 0; height: 40vh;
-  perspective: 480px; pointer-events: none; z-index: 0;
-}
-.grid-floor-inner {
-  width: 100%; height: 100%;
-  background:
-    linear-gradient(rgba(0,255,200,.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,255,200,.05) 1px, transparent 1px);
-  background-size: 50px 50px;
-  transform: rotateX(68deg); transform-origin: bottom;
-  animation: gfpulse 5s ease-in-out infinite;
-}
-@keyframes gfpulse { 0%, 100% { opacity: .38; } 50% { opacity: .8; } }
-.ring {
-  position: fixed; border-radius: 50%; border: 1px solid;
-  pointer-events: none; left: 50%; top: 46%; opacity: 0;
-  animation: ringout var(--rd) var(--rs) ease-out infinite;
-}
-@keyframes ringout {
-  0%   { transform: translate(-50%,-50%) scale(.12); opacity: .6; }
-  100% { transform: translate(-50%,-50%) scale(4.2);  opacity: 0; }
-}
-
-.aud-wrap {
-  position: relative; z-index: 10;
-  display: flex; flex-direction: column; align-items: center;
-  gap: 20px; padding: 28px; width: 100%; max-width: 460px;
-}
-.aud-title {
-  font-size: clamp(24px, 7vw, 52px); font-weight: 900;
-  letter-spacing: 9px; text-transform: uppercase;
-  background: linear-gradient(130deg, var(--cyan), var(--blue));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 20px rgba(0,255,200,.28));
-  animation: titlebob 3.5s ease-in-out infinite;
-}
-@keyframes titlebob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-
-.aud-card {
-  width: 100%;
-  background: rgba(0,13,30,.78);
-  border: 1px solid rgba(0,255,200,.14);
-  backdrop-filter: blur(14px);
-  padding: 24px; position: relative; overflow: hidden;
-}
-.aud-card::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-  animation: cardscan 2.3s linear infinite;
-}
-@keyframes cardscan { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
-
-.aud-label { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: rgba(0,255,200,.35); font-family: 'Share Tech Mono', monospace; margin-bottom: 6px; }
-.aud-field {
-  width: 100%; padding: 11px;
-  background: rgba(0,255,200,.03); border: 1px solid rgba(0,255,200,.2);
-  color: var(--cyan); font-family: 'Orbitron', sans-serif;
-  font-size: 23px; font-weight: 700; letter-spacing: 10px;
-  text-align: center; text-transform: uppercase;
-  outline: none; transition: all .3s; margin-bottom: 14px;
-}
-.aud-field::placeholder { color: rgba(0,255,200,.13); font-size: 10px; letter-spacing: 3px; font-weight: 400; }
-.aud-field:focus { border-color: var(--cyan); box-shadow: 0 0 22px rgba(0,255,200,.07); }
-.aud-field.name { font-size: 13px; letter-spacing: 2px; color: rgba(200,225,255,.9); font-family: 'Share Tech Mono', monospace; }
-.aud-join-btn {
-  width: 100%; padding: 13px;
-  background: transparent; border: 2px solid var(--cyan); color: var(--cyan);
-  font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 700;
-  letter-spacing: 4px; text-transform: uppercase;
-  transition: all .25s; margin-top: 2px;
-}
-.aud-join-btn:hover:not(:disabled) { background: rgba(0,255,200,.07); box-shadow: 0 0 28px rgba(0,255,200,.17); }
-.aud-join-btn:disabled { opacity: .42; cursor: not-allowed; }
-.aud-err {
-  display: none; margin-top: 9px; padding: 9px 12px;
-  background: rgba(240,64,74,.1); border: 1px solid rgba(240,64,74,.3);
-  color: #f06068; font-size: 11px; font-family: 'Share Tech Mono', monospace; line-height: 1.5;
-}
-
-/* Buzz zone */
-.buzz-zone { display: flex; flex-direction: column; align-items: center; gap: 14px; }
-.buzz-sess-lbl { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: rgba(0,255,200,.26); font-family: 'Share Tech Mono', monospace; }
-.buzz-ring-wrap { position: relative; width: 183px; height: 183px; display: flex; align-items: center; justify-content: center; }
-.buzz-pulse { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--cyan); opacity: 0; animation: bpulse 2.3s ease-out infinite; }
-.buzz-pulse:nth-child(2) { animation-delay: .77s; }
-.buzz-pulse:nth-child(3) { animation-delay: 1.54s; }
-@keyframes bpulse { 0% { transform: scale(.72); opacity: .4; } 100% { transform: scale(1.65); opacity: 0; } }
-.buzz-btn {
-  width: 145px; height: 145px; border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, rgba(0,255,200,.2), rgba(0,32,50,.94) 68%);
-  border: 3px solid var(--cyan); color: var(--cyan);
-  font-family: 'Orbitron', sans-serif; font-size: 13px; font-weight: 900;
-  letter-spacing: 3px; text-transform: uppercase;
-  transition: all .15s; position: relative; z-index: 1;
-  box-shadow: 0 0 44px rgba(0,255,200,.12), inset 0 0 26px rgba(0,255,200,.04);
-}
-.buzz-btn:hover:not(:disabled) { transform: scale(1.06); box-shadow: 0 0 80px rgba(0,255,200,.3); }
-.buzz-btn:active:not(:disabled) { transform: scale(.95); }
-.buzz-btn.fired     { background: radial-gradient(circle at 35% 30%, rgba(255,0,170,.28), rgba(50,0,34,.94) 68%); border-color: var(--pink); color: var(--pink); box-shadow: 0 0 70px rgba(255,0,170,.24); }
-.buzz-btn.dismissed { background: radial-gradient(circle at 35% 30%, rgba(35,35,35,.2), rgba(7,7,7,.94) 68%); border-color: #181818; color: #1e1e1e; cursor: not-allowed; box-shadow: none; }
-.buzz-pos { text-align: center; }
-.buzz-pos-num { font-size: 70px; font-weight: 900; line-height: 1; background: linear-gradient(130deg, var(--cyan), var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: posglow 2.5s ease-in-out infinite; }
-@keyframes posglow { 0%, 100% { filter: drop-shadow(0 0 14px rgba(0,255,200,.35)); } 50% { filter: drop-shadow(0 0 38px rgba(0,255,200,.68)); } }
-.buzz-pos-lbl { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: rgba(0,255,200,.28); font-family: 'Share Tech Mono', monospace; margin-top: 2px; }
-.buzz-status { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; font-family: 'Share Tech Mono', monospace; }
-.buzz-status.idle    { color: rgba(0,255,200,.4); }
-.buzz-status.waiting { color: var(--pink); }
-.buzz-status.out     { color: #2e2e2e; }
-.buzz-leave-btn {
-  background: transparent; border: 1px solid rgba(255,0,170,.18);
-  color: rgba(255,0,170,.32); font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
-  padding: 7px 18px; transition: all .2s;
-}
-.buzz-leave-btn:hover { border-color: var(--pink); color: var(--pink); }
-.flash { position: fixed; inset: 0; z-index: 999; pointer-events: none; background: var(--cyan); animation: flashout .5s ease-out forwards; }
-@keyframes flashout { 0% { opacity: 0; } 10% { opacity: .18; } 100% { opacity: 0; } }
-
-/* Session ended overlay */
-.sess-over {
-  display: none; position: fixed; inset: 0; z-index: 300;
-  background: rgba(1,5,9,.97);
-  align-items: center; justify-content: center; flex-direction: column;
-  gap: 14px; font-family: 'Orbitron', sans-serif; text-align: center; padding: 30px;
-}
-.sess-over.show { display: flex; }
-.sess-over-title { font-size: 20px; font-weight: 900; letter-spacing: 4px; color: var(--pink); }
-.sess-over-sub   { font-size: 10px; letter-spacing: 2px; color: rgba(255,255,255,.3); font-family: 'Share Tech Mono', monospace; }
-.sess-over-btn   { margin-top: 10px; padding: 12px 26px; background: transparent; border: 2px solid var(--cyan); color: var(--cyan); font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; transition: all .25s; }
-.sess-over-btn:hover { background: rgba(0,255,200,.08); }
+/* AUDIENCE */
+#pg-audience{background:var(--black);align-items:center;justify-content:center;position:relative;overflow:hidden;font-family:'Orbitron',sans-serif}
+#stars{position:fixed;inset:0;pointer-events:none;z-index:0}
+.star{position:absolute;border-radius:50%;background:#fff;animation:twinkle var(--sd) var(--ss) infinite alternate ease-in-out}
+@keyframes twinkle{from{opacity:var(--sa);transform:scale(1)}to{opacity:var(--sb);transform:scale(1.9)}}
+.grid-floor{position:fixed;bottom:0;left:0;right:0;height:40vh;perspective:480px;pointer-events:none;z-index:0}
+.grid-floor-inner{width:100%;height:100%;background:linear-gradient(rgba(0,255,200,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,200,.05) 1px,transparent 1px);background-size:50px 50px;transform:rotateX(68deg);transform-origin:bottom;animation:gfp 5s ease-in-out infinite}
+@keyframes gfp{0%,100%{opacity:.38}50%{opacity:.8}}
+.ring{position:fixed;border-radius:50%;border:1px solid;pointer-events:none;left:50%;top:46%;opacity:0;animation:ringout var(--rd) var(--rs) ease-out infinite}
+@keyframes ringout{0%{transform:translate(-50%,-50%) scale(.12);opacity:.6}100%{transform:translate(-50%,-50%) scale(4.2);opacity:0}}
+.aud-wrap{position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;gap:20px;padding:28px;width:100%;max-width:460px}
+.aud-title{font-size:clamp(24px,7vw,52px);font-weight:900;letter-spacing:9px;text-transform:uppercase;background:linear-gradient(130deg,var(--cyan),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 20px rgba(0,255,200,.28));animation:titlebob 3.5s ease-in-out infinite}
+@keyframes titlebob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.aud-card{width:100%;background:rgba(0,13,30,.78);border:1px solid rgba(0,255,200,.14);backdrop-filter:blur(14px);padding:24px;position:relative;overflow:hidden}
+.aud-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);animation:cardscan 2.3s linear infinite}
+@keyframes cardscan{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.aud-label{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(0,255,200,.35);font-family:'Share Tech Mono',monospace;margin-bottom:6px}
+.aud-field{width:100%;padding:11px;background:rgba(0,255,200,.03);border:1px solid rgba(0,255,200,.2);color:var(--cyan);font-family:'Orbitron',sans-serif;font-size:23px;font-weight:700;letter-spacing:10px;text-align:center;text-transform:uppercase;outline:none;transition:all .3s;margin-bottom:14px}
+.aud-field::placeholder{color:rgba(0,255,200,.13);font-size:10px;letter-spacing:3px;font-weight:400}
+.aud-field:focus{border-color:var(--cyan);box-shadow:0 0 22px rgba(0,255,200,.07)}
+.aud-field.name{font-size:13px;letter-spacing:2px;color:rgba(200,225,255,.9);font-family:'Share Tech Mono',monospace}
+.aud-join-btn{width:100%;padding:13px;background:transparent;border:2px solid var(--cyan);color:var(--cyan);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:4px;text-transform:uppercase;transition:all .25s;margin-top:2px}
+.aud-join-btn:hover:not(:disabled){background:rgba(0,255,200,.07);box-shadow:0 0 28px rgba(0,255,200,.17)}
+.aud-join-btn:disabled{opacity:.42;cursor:not-allowed}
+.aud-err{display:none;margin-top:9px;padding:9px 12px;background:rgba(240,64,74,.1);border:1px solid rgba(240,64,74,.3);color:#f06068;font-size:11px;font-family:'Share Tech Mono',monospace;line-height:1.5}
+.buzz-zone{display:flex;flex-direction:column;align-items:center;gap:14px}
+.buzz-sess-lbl{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(0,255,200,.26);font-family:'Share Tech Mono',monospace}
+.buzz-ring-wrap{position:relative;width:183px;height:183px;display:flex;align-items:center;justify-content:center}
+.buzz-pulse{position:absolute;inset:0;border-radius:50%;border:2px solid var(--cyan);opacity:0;animation:bpulse 2.3s ease-out infinite}
+.buzz-pulse:nth-child(2){animation-delay:.77s}.buzz-pulse:nth-child(3){animation-delay:1.54s}
+@keyframes bpulse{0%{transform:scale(.72);opacity:.4}100%{transform:scale(1.65);opacity:0}}
+.buzz-btn{width:145px;height:145px;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(0,255,200,.2),rgba(0,32,50,.94) 68%);border:3px solid var(--cyan);color:var(--cyan);font-family:'Orbitron',sans-serif;font-size:13px;font-weight:900;letter-spacing:3px;text-transform:uppercase;transition:all .15s;position:relative;z-index:1;box-shadow:0 0 44px rgba(0,255,200,.12),inset 0 0 26px rgba(0,255,200,.04)}
+.buzz-btn:hover:not(:disabled){transform:scale(1.06);box-shadow:0 0 80px rgba(0,255,200,.3)}
+.buzz-btn:active:not(:disabled){transform:scale(.95)}
+.buzz-btn.fired{background:radial-gradient(circle at 35% 30%,rgba(255,0,170,.28),rgba(50,0,34,.94) 68%);border-color:var(--pink);color:var(--pink);box-shadow:0 0 70px rgba(255,0,170,.24)}
+.buzz-btn.dismissed{background:radial-gradient(circle at 35% 30%,rgba(35,35,35,.2),rgba(7,7,7,.94) 68%);border-color:#181818;color:#1e1e1e;cursor:not-allowed;box-shadow:none}
+.buzz-pos{text-align:center}
+.buzz-pos-num{font-size:70px;font-weight:900;line-height:1;background:linear-gradient(130deg,var(--cyan),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:posglow 2.5s ease-in-out infinite}
+@keyframes posglow{0%,100%{filter:drop-shadow(0 0 14px rgba(0,255,200,.35))}50%{filter:drop-shadow(0 0 38px rgba(0,255,200,.68))}}
+.buzz-pos-lbl{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(0,255,200,.28);font-family:'Share Tech Mono',monospace;margin-top:2px}
+.buzz-status{font-size:10px;letter-spacing:2px;text-transform:uppercase;font-family:'Share Tech Mono',monospace}
+.buzz-status.idle{color:rgba(0,255,200,.4)}.buzz-status.waiting{color:var(--pink)}.buzz-status.out{color:#2e2e2e}
+.buzz-leave-btn{background:transparent;border:1px solid rgba(255,0,170,.18);color:rgba(255,0,170,.32);font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:7px 18px;transition:all .2s}
+.buzz-leave-btn:hover{border-color:var(--pink);color:var(--pink)}
+.flash{position:fixed;inset:0;z-index:999;pointer-events:none;background:var(--cyan);animation:flashout .5s ease-out forwards}
+@keyframes flashout{0%{opacity:0}10%{opacity:.18}100%{opacity:0}}
+.sess-over{display:none;position:fixed;inset:0;z-index:300;background:rgba(1,5,9,.97);align-items:center;justify-content:center;flex-direction:column;gap:14px;font-family:'Orbitron',sans-serif;text-align:center;padding:30px}
+.sess-over.show{display:flex}
+.sess-over-title{font-size:20px;font-weight:900;letter-spacing:4px;color:var(--pink)}
+.sess-over-sub{font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.3);font-family:'Share Tech Mono',monospace}
+.sess-over-btn{margin-top:10px;padding:12px 26px;background:transparent;border:2px solid var(--cyan);color:var(--cyan);font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;transition:all .25s}
+.sess-over-btn:hover{background:rgba(0,255,200,.08)}
 </style>
 </head>
 <body>
 
-<!-- ══════════════════════════════════
-     LOGIN PAGE
-══════════════════════════════════ -->
+<!-- LOGIN -->
 <div id="pg-login" class="page">
   <div class="login-box" id="login-box">
     <div class="login-title">BuzzSys</div>
     <div class="login-sub">Admin Portal</div>
     <label class="login-label">Password</label>
     <input id="pwd" class="login-input" type="password" placeholder="Enter password…"
-           autocomplete="off"
-           onkeydown="if(event.key==='Enter') doLogin()">
+           autocomplete="off" onkeydown="if(event.key==='Enter') doLogin()">
     <div class="login-err" id="login-err"></div>
     <button class="login-btn" id="login-btn" onclick="doLogin()">Unlock Admin</button>
   </div>
 </div>
 
-<!-- ══════════════════════════════════
-     ADMIN PAGE
-══════════════════════════════════ -->
+<!-- ADMIN -->
 <div id="pg-admin" class="page">
   <div class="adm-topbar">
     <span class="adm-logo">BuzzSys // Admin</span>
-    <button class="adm-lock-btn" onclick="doLock()">🔒 Lock</button>
+    <div class="adm-topbar-right">
+      <button class="sound-toggle on" id="sound-toggle" onclick="toggleAdminSound()">🔊 Sound: ON</button>
+      <button class="adm-lock-btn" onclick="doLock()">🔒 Lock</button>
+    </div>
   </div>
-
   <div class="adm-body">
-    <!-- Sidebar -->
     <div class="adm-sidebar">
       <div class="adm-sec">
         <div class="adm-sec-title">New Session</div>
@@ -425,13 +194,9 @@ input  { font-family: inherit; }
       </div>
       <div class="adm-sec" style="flex:1;overflow:hidden;display:flex;flex-direction:column;padding-bottom:0">
         <div class="adm-sec-title">Sessions</div>
-        <div class="sess-list" id="sess-list">
-          <div class="content-empty">Loading…</div>
-        </div>
+        <div class="sess-list" id="sess-list"><div class="content-empty">Loading…</div></div>
       </div>
     </div>
-
-    <!-- Main -->
     <div class="adm-main">
       <div class="adm-tabs">
         <button class="adm-tab on" id="tab-queue" onclick="setTab('queue')">Live Queue</button>
@@ -449,20 +214,15 @@ input  { font-family: inherit; }
   </div>
 </div>
 
-<!-- ══════════════════════════════════
-     AUDIENCE PAGE
-══════════════════════════════════ -->
+<!-- AUDIENCE -->
 <div id="pg-audience" class="page">
   <div id="stars"></div>
   <div class="grid-floor"><div class="grid-floor-inner"></div></div>
   <div class="ring" style="width:255px;height:255px;border-color:var(--cyan);--rd:4.5s;--rs:0s"></div>
   <div class="ring" style="width:255px;height:255px;border-color:var(--blue);--rd:6s;--rs:1.5s"></div>
   <div class="ring" style="width:255px;height:255px;border-color:var(--pink);--rd:7.5s;--rs:3s"></div>
-
   <div class="aud-wrap">
     <div class="aud-title">BUZZER</div>
-
-    <!-- Join form -->
     <div class="aud-card" id="join-panel">
       <div class="aud-label">Your Name</div>
       <input class="aud-field name" id="aud-name" placeholder="Enter your name…"
@@ -474,14 +234,10 @@ input  { font-family: inherit; }
       <div class="aud-err" id="aud-err"></div>
       <button class="aud-join-btn" id="join-btn" onclick="joinSession()">Join Session</button>
     </div>
-
-    <!-- Buzz zone -->
     <div class="buzz-zone" id="buzz-panel" style="display:none">
       <div class="buzz-sess-lbl" id="buzz-sess-lbl"></div>
       <div class="buzz-ring-wrap">
-        <div class="buzz-pulse"></div>
-        <div class="buzz-pulse"></div>
-        <div class="buzz-pulse"></div>
+        <div class="buzz-pulse"></div><div class="buzz-pulse"></div><div class="buzz-pulse"></div>
         <button class="buzz-btn" id="buzz-btn" onclick="doBuzz()">BUZZ</button>
       </div>
       <div class="buzz-pos" id="buzz-pos" style="display:none">
@@ -492,8 +248,6 @@ input  { font-family: inherit; }
       <button class="buzz-leave-btn" onclick="leaveSession()">Leave Session</button>
     </div>
   </div>
-
-  <!-- Session closed overlay -->
   <div class="sess-over" id="sess-over">
     <div class="sess-over-title">SESSION ENDED</div>
     <div class="sess-over-sub">The host has closed this session</div>
@@ -504,120 +258,209 @@ input  { font-family: inherit; }
 <script>
 'use strict';
 
-// ─────────────────────────────────────────────────
-// CONSTANTS
-// ─────────────────────────────────────────────────
-
-// Password: VWXYZ@1234
-// To change: hash your password at https://emn178.github.io/online-tools/sha256.html
+/* ═══════════════════════════════════════════════
+   PASSWORD CONFIG
+   Current password: VWXYZ@1234
+   To change: hash at https://emn178.github.io/online-tools/sha256.html
+═══════════════════════════════════════════════ */
 const PWD_HASH  = '12ddca6641499c42bd91b35f5cf533f837e8aa17660699f9dc1ea83db9e73455';
 const MAX_TRIES = 5;
 const LOCK_SECS = 30;
 
-// ─────────────────────────────────────────────────
-// UTILITIES
-// ─────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════
+   UTILITIES
+═══════════════════════════════════════════════ */
 const esc   = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const TS    = () => firebase.firestore.FieldValue.serverTimestamp();
 const toMs  = ts => ts ? (ts.toMillis ? ts.toMillis() : Number(ts)) : 0;
-const param = k => new URLSearchParams(location.search).get(k) || '';
+const param = k  => new URLSearchParams(location.search).get(k) || '';
 
-function fmtTime(ts) {
-  if (!ts) return '—';
+function fmtTime(ts){
+  if(!ts) return '—';
   const d = ts.toDate ? ts.toDate() : new Date(ts);
-  return d.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  return d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 }
-function fmtDate(ts) {
-  if (!ts) return '—';
+function fmtDate(ts){
+  if(!ts) return '—';
   const d = ts.toDate ? ts.toDate() : new Date(ts);
-  return d.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 }
-function genCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  return Array.from({length:4}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+function genCode(){
+  const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:4}, () => c[Math.floor(Math.random()*c.length)]).join('');
 }
-function isMobile() {
+function isMobile(){
   return window.innerWidth <= 768 || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
-async function sha256(str) {
+async function sha256(str){
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
 
-// ─────────────────────────────────────────────────
-// ROUTING
-// ─────────────────────────────────────────────────
-function showPage(name) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById('pg-' + name).classList.add('active');
-  if (name === 'audience' && !window._starsBuilt) buildStars();
-  if (name === 'admin') adminInit();
+/* ═══════════════════════════════════════════════
+   SOUND ENGINE  (Web Audio API — no files needed)
+
+   playBuzzer(kind)
+   ─────────────────────────────────────────────
+   'buzz'    → harsh game-show buzz  (audience on BUZZ press, admin on receiving it)
+   'dismiss' → short low blip        (audience when dismissed)
+   'join'    → soft chime            (audience on joining session)
+
+   Customise:
+     frequency  = pitch in Hz  (lower number = deeper sound)
+     gain       = volume 0–1
+     type       = 'sawtooth' | 'square' | 'sine' | 'triangle'
+     duration   = seconds (the last number in stop/ramp calls)
+═══════════════════════════════════════════════ */
+let _audioCtx = null;
+
+function getCtx(){
+  if(!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if(_audioCtx.state === 'suspended') _audioCtx.resume();
+  return _audioCtx;
 }
 
-// ─────────────────────────────────────────────────
-// STARS (audience background)
-// ─────────────────────────────────────────────────
-function buildStars() {
-  const container = document.getElementById('stars');
-  for (let i = 0; i < 110; i++) {
-    const s  = document.createElement('div');
-    const sz = Math.random() * 2 + 0.8;
+function playBuzzer(kind = 'buzz'){
+  try{
+    const ctx = getCtx();
+    const now = ctx.currentTime;
+
+    if(kind === 'buzz'){
+      // Layer 1 — main harsh tone, drops in pitch
+      const o1 = ctx.createOscillator(), g1 = ctx.createGain();
+      o1.type = 'sawtooth';
+      o1.frequency.setValueAtTime(180, now);
+      o1.frequency.linearRampToValueAtTime(120, now + 0.4);
+      g1.gain.setValueAtTime(0.7, now);
+      g1.gain.linearRampToValueAtTime(0, now + 0.45);
+      o1.connect(g1); g1.connect(ctx.destination);
+      o1.start(now); o1.stop(now + 0.45);
+
+      // Layer 2 — higher overtone for buzz character
+      const o2 = ctx.createOscillator(), g2 = ctx.createGain();
+      o2.type = 'square';
+      o2.frequency.setValueAtTime(360, now);
+      g2.gain.setValueAtTime(0.3, now);
+      g2.gain.linearRampToValueAtTime(0, now + 0.35);
+      o2.connect(g2); g2.connect(ctx.destination);
+      o2.start(now); o2.stop(now + 0.35);
+
+      // Layer 3 — noise burst for impact feel
+      const bufSize = ctx.sampleRate * 0.08;
+      const nb = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+      const nd = nb.getChannelData(0);
+      for(let i = 0; i < bufSize; i++) nd[i] = Math.random() * 2 - 1;
+      const ns = ctx.createBufferSource(), ng = ctx.createGain();
+      ns.buffer = nb;
+      ng.gain.setValueAtTime(0.4, now);
+      ng.gain.linearRampToValueAtTime(0, now + 0.08);
+      ns.connect(ng); ng.connect(ctx.destination);
+      ns.start(now);
+
+    } else if(kind === 'dismiss'){
+      // Short descending blip
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(300, now);
+      o.frequency.linearRampToValueAtTime(150, now + 0.18);
+      g.gain.setValueAtTime(0.4, now);
+      g.gain.linearRampToValueAtTime(0, now + 0.2);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(now); o.stop(now + 0.2);
+
+    } else if(kind === 'join'){
+      // Two-tone soft confirmation chime
+      [523, 659].forEach((freq, i) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.value = freq;
+        const t = now + i * 0.12;
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.3, t + 0.02);
+        g.gain.linearRampToValueAtTime(0, t + 0.15);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(t); o.stop(t + 0.15);
+      });
+    }
+  } catch(e){
+    console.warn('Audio error:', e); // non-critical, fail silently
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   ROUTING
+═══════════════════════════════════════════════ */
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('pg-' + name).classList.add('active');
+  if(name === 'audience' && !window._starsBuilt) buildStars();
+  if(name === 'admin') adminInit();
+}
+
+/* ═══════════════════════════════════════════════
+   STARS
+═══════════════════════════════════════════════ */
+function buildStars(){
+  const el = document.getElementById('stars');
+  for(let i = 0; i < 110; i++){
+    const s = document.createElement('div'), sz = Math.random() * 2 + 0.8;
     s.className = 'star';
     s.style.cssText =
-      `width:${sz}px;height:${sz}px;` +
-      `left:${Math.random()*100}%;top:${Math.random()*100}%;` +
-      `--sd:${(Math.random()*4+1.5).toFixed(1)}s;` +
-      `--ss:${(Math.random()*6).toFixed(1)}s;` +
-      `--sa:${(Math.random()*.07).toFixed(3)};` +
-      `--sb:${(Math.random()*.6+.1).toFixed(3)}`;
-    container.appendChild(s);
+      `width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;` +
+      `--sd:${(Math.random()*4+1.5).toFixed(1)}s;--ss:${(Math.random()*6).toFixed(1)}s;` +
+      `--sa:${(Math.random()*.07).toFixed(3)};--sb:${(Math.random()*.6+.1).toFixed(3)}`;
+    el.appendChild(s);
   }
   window._starsBuilt = true;
 }
 
-// ─────────────────────────────────────────────────
-// AUTH  (SHA-256 password + brute-force lock)
-// ─────────────────────────────────────────────────
-let _fails    = 0;
-let _lockUntil = 0;
-let _lockTimer = null;
+/* ═══════════════════════════════════════════════
+   AUTH
+═══════════════════════════════════════════════ */
+let _fails = 0, _lockUntil = 0, _lockTimer = null;
 
-function loginErr(msg) {
+function loginErr(msg){
   const el = document.getElementById('login-err');
-  el.textContent = msg;
-  el.style.display = msg ? 'block' : 'none';
+  el.textContent = msg; el.style.display = msg ? 'block' : 'none';
 }
-function loginBusy(busy, label) {
+function loginBusy(busy, label){
   const btn = document.getElementById('login-btn');
-  btn.disabled = busy;
-  btn.textContent = busy ? 'Checking…' : (label || 'Unlock Admin');
+  btn.disabled = busy; btn.textContent = busy ? 'Checking…' : (label || 'Unlock Admin');
 }
 
-async function doLogin() {
-  if (Date.now() < _lockUntil) return;
+async function doLogin(){
+  if(Date.now() < _lockUntil) return;
   const pwd = document.getElementById('pwd').value;
-  if (!pwd) { loginErr('Please enter the password.'); return; }
+  if(!pwd){ loginErr('Please enter the password.'); return; }
   loginBusy(true); loginErr('');
-
   const hash = await sha256(pwd);
   document.getElementById('pwd').value = '';
 
-  if (hash === PWD_HASH) {
+  if(hash === PWD_HASH){
     _fails = 0;
     sessionStorage.setItem('bz_auth', '1');
     loginBusy(false);
     showPage('admin');
   } else {
     _fails++;
-    // Shake animation
     const box = document.getElementById('login-box');
-    box.classList.remove('shake');
-    void box.offsetWidth; // reflow
-    box.classList.add('shake');
-
-    if (_fails >= MAX_TRIES) {
+    box.classList.remove('shake'); void box.offsetWidth; box.classList.add('shake');
+    if(_fails >= MAX_TRIES){
       _lockUntil = Date.now() + LOCK_SECS * 1000;
-      startLockout(LOCK_SECS);
+      let t = LOCK_SECS;
+      const tick = () => {
+        loginErr(`Too many attempts — locked for ${t}s`);
+        document.getElementById('login-btn').textContent = `Locked (${t}s)`;
+        document.getElementById('login-btn').disabled = true;
+        document.getElementById('pwd').disabled = true;
+        if(t <= 0){
+          clearInterval(_lockTimer); _fails = 0; _lockUntil = 0;
+          loginErr(''); loginBusy(false, 'Unlock Admin');
+          document.getElementById('pwd').disabled = false;
+          document.getElementById('pwd').focus();
+        }
+        t--;
+      };
+      tick(); _lockTimer = setInterval(tick, 1000);
     } else {
       const left = MAX_TRIES - _fails;
       loginErr(`Wrong password — ${left} attempt${left === 1 ? '' : 's'} left.`);
@@ -627,65 +470,51 @@ async function doLogin() {
   }
 }
 
-function startLockout(secs) {
-  const btn = document.getElementById('login-btn');
-  const inp = document.getElementById('pwd');
-  let t = secs;
-
-  function tick() {
-    loginErr(`Too many attempts — locked for ${t}s`);
-    btn.textContent = `Locked (${t}s)`;
-    btn.disabled = true;
-    inp.disabled = true;
-    if (t <= 0) {
-      clearInterval(_lockTimer);
-      _fails = 0; _lockUntil = 0;
-      loginErr('');
-      loginBusy(false, 'Unlock Admin');
-      inp.disabled = false;
-      inp.focus();
-    }
-    t--;
-  }
-  tick();
-  _lockTimer = setInterval(tick, 1000);
-}
-
-function doLock() {
+function doLock(){
   sessionStorage.removeItem('bz_auth');
-  // Mark all my sessions inactive
-  for (const id of _mySessions) {
-    db.collection('sessions').doc(id).update({ active: false }).catch(() => {});
-  }
+  for(const id of _mySessions)
+    db.collection('sessions').doc(id).update({active: false}).catch(() => {});
   _mySessions.clear();
   adminCleanup();
   showPage('login');
   setTimeout(() => document.getElementById('pwd').focus(), 150);
 }
 
-// ─────────────────────────────────────────────────
-// ADMIN
-// ─────────────────────────────────────────────────
-let _subs      = [];    // all Firestore listeners
-let _contSub   = null;  // content-area listener (queue or log)
-let _selId     = null;  // selected session id
-let _tab       = 'queue';
-const _mySessions = new Set(); // sessions I created this tab
+/* ═══════════════════════════════════════════════
+   ADMIN SOUND TOGGLE
+═══════════════════════════════════════════════ */
+let _adminSoundOn = true; // sound is ON by default
 
-function addSub(unsub) { if (unsub) _subs.push(unsub); }
-function killSubs()    { _subs.forEach(fn => { try { fn(); } catch {} }); _subs = []; }
-function killContent() { if (_contSub) { try { _contSub(); } catch {} _contSub = null; } }
-function adminCleanup() { killSubs(); killContent(); }
+function toggleAdminSound(){
+  _adminSoundOn = !_adminSoundOn;
+  const btn = document.getElementById('sound-toggle');
+  btn.textContent = _adminSoundOn ? '🔊 Sound: ON' : '🔇 Sound: OFF';
+  btn.classList.toggle('on', _adminSoundOn);
+  // Play a quick test beep when turning ON so admin knows it works
+  if(_adminSoundOn) playBuzzer('join');
+}
 
-function adminInit() {
+/* ═══════════════════════════════════════════════
+   ADMIN
+═══════════════════════════════════════════════ */
+let _subs     = [];
+let _contSub  = null;
+let _selId    = null;
+let _tab      = 'queue';
+let _prevQueueIds = new Set(); // tracks known queue entries so we detect NEW ones
+const _mySessions = new Set();
+
+function addSub(u){ if(u) _subs.push(u); }
+function killSubs(){ _subs.forEach(fn => { try{ fn(); }catch{} }); _subs = []; }
+function killContent(){ if(_contSub){ try{ _contSub(); }catch{} _contSub = null; } }
+function adminCleanup(){ killSubs(); killContent(); }
+
+function adminInit(){
   adminCleanup();
-
-  // Listen to all sessions ordered by creation time
   addSub(
-    db.collection('sessions')
-      .orderBy('createdAt', 'desc')
+    db.collection('sessions').orderBy('createdAt','desc')
       .onSnapshot(
-        snap => renderSessionList(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+        snap => renderSessionList(snap.docs.map(d => ({id: d.id, ...d.data()}))),
         err  => {
           document.getElementById('sess-list').innerHTML =
             `<div class="content-empty">⚠ ${esc(err.message)}</div>`;
@@ -694,12 +523,9 @@ function adminInit() {
   );
 }
 
-function renderSessionList(list) {
+function renderSessionList(list){
   const el = document.getElementById('sess-list');
-  if (!list.length) {
-    el.innerHTML = '<div class="content-empty">No sessions yet</div>';
-    return;
-  }
+  if(!list.length){ el.innerHTML = '<div class="content-empty">No sessions yet</div>'; return; }
   el.innerHTML = list.map(s => `
     <div class="sess-item ${_selId === s.id ? 'sel' : ''}"
          data-id="${s.id}" onclick="selectSession('${s.id}')">
@@ -712,39 +538,38 @@ function renderSessionList(list) {
       </div>
     </div>`).join('');
 
-  // Per-session queue-count listeners
   list.forEach(s => {
     addSub(
-      db.collection('queue')
-        .where('sessionId', '==', s.id)
+      db.collection('queue').where('sessionId','==',s.id)
         .onSnapshot(snap => {
           const el = document.getElementById('cnt-' + s.id);
-          if (el) el.textContent = snap.size + ' in queue';
+          if(el) el.textContent = snap.size + ' in queue';
         })
     );
   });
 }
 
-function selectSession(id) {
+function selectSession(id){
   _selId = id;
+  _prevQueueIds = new Set(); // reset when switching sessions
   document.querySelectorAll('.sess-item')
     .forEach(el => el.classList.toggle('sel', el.dataset.id === id));
   document.getElementById('tab-actions').style.display = 'flex';
   loadContent();
 }
 
-function setTab(name) {
+function setTab(name){
   _tab = name;
-  ['queue', 'log', 'qr'].forEach(t => {
-    document.getElementById('tab-' + t).classList.toggle('on', t === name);
-  });
+  ['queue','log','qr'].forEach(t =>
+    document.getElementById('tab-' + t).classList.toggle('on', t === name)
+  );
   loadContent();
 }
 
-async function createSession() {
+async function createSession(){
   const inp  = document.getElementById('new-sess-name');
   const name = inp.value.trim();
-  if (!name) return;
+  if(!name) return;
   inp.value = '';
   const ref = await db.collection('sessions').add({
     name, code: genCode(), active: true, createdAt: TS()
@@ -753,62 +578,87 @@ async function createSession() {
   selectSession(ref.id);
 }
 
-async function endSession() {
-  if (!_selId) return;
-  await db.collection('sessions').doc(_selId).update({ active: false });
-  const snap = await db.collection('queue').where('sessionId', '==', _selId).get();
-  const b = db.batch();
-  snap.forEach(d => b.delete(d.ref));
-  await b.commit();
+async function endSession(){
+  if(!_selId) return;
+  await db.collection('sessions').doc(_selId).update({active: false});
+  const snap = await db.collection('queue').where('sessionId','==',_selId).get();
+  const b = db.batch(); snap.forEach(d => b.delete(d.ref)); await b.commit();
 }
 
-async function clearQueue() {
-  if (!_selId) return;
-  const snap = await db.collection('queue').where('sessionId', '==', _selId).get();
-  const b = db.batch();
-  snap.forEach(d => b.delete(d.ref));
-  await b.commit();
+async function clearQueue(){
+  if(!_selId) return;
+  const snap = await db.collection('queue').where('sessionId','==',_selId).get();
+  const b = db.batch(); snap.forEach(d => b.delete(d.ref)); await b.commit();
 }
 
-async function dismissEntry(id) {
+async function dismissEntry(id){
   await db.collection('queue').doc(id).delete();
-  try { await db.collection('log').doc(id).update({ dismissed: true }); } catch {}
+  try{ await db.collection('log').doc(id).update({dismissed: true}); }catch{}
 }
 
-function loadContent() {
+function loadContent(){
   killContent();
-  if (!_selId) return;
+  if(!_selId) return;
 
   const sid     = _selId;
   const content = document.getElementById('adm-content');
   content.innerHTML = '<div class="content-empty">Loading…</div>';
 
   db.collection('sessions').doc(sid).get().then(sdoc => {
-    if (!sdoc.exists) return;
+    if(!sdoc.exists) return;
     const sess = sdoc.data();
     document.getElementById('end-sess-btn').style.display = sess.active ? 'inline-block' : 'none';
 
-    if (_tab === 'qr') { renderQR(sess, sid, content); return; }
+    if(_tab === 'qr'){ renderQR(sess, sid, content); return; }
 
     const col = _tab === 'queue' ? 'queue' : 'log';
-    const dir = _tab === 'queue' ? 1 : -1;  // queue: oldest-first; log: newest-first
+    const dir = _tab === 'queue' ? 1 : -1;
 
-    // No .orderBy() → no composite index needed; sort client-side
-    _contSub = db.collection(col)
-      .where('sessionId', '==', sid)
+    // ── IMPORTANT: This is where admin hears the buzz sound ──────────────
+    // We watch the queue collection. Each time the snapshot fires we
+    // compare the current IDs to the previous ones. Any NEW id = someone
+    // just buzzed → play the buzz sound on the admin device.
+    // _prevQueueIds starts empty so the very first snapshot (loading
+    // existing entries) is treated as "baseline" — no sound on initial load.
+    let _firstSnapshot = true;
+
+    _contSub = db.collection(col).where('sessionId','==',sid)
       .onSnapshot(
         snap => {
           const rows = snap.docs
-            .map(d => ({ id: d.id, ...d.data() }))
-            .sort((a, b) => (toMs(a.buzzedAt) - toMs(b.buzzedAt)) * dir);
+            .map(d => ({id: d.id, ...d.data()}))
+            .sort((a,b) => (toMs(a.buzzedAt) - toMs(b.buzzedAt)) * dir);
 
-          if (_tab === 'queue') {
+          // ── Admin sound: detect new queue entries ─────────────────────
+          if(_tab === 'queue'){
+            const currentIds = new Set(snap.docs.map(d => d.id));
+
+            if(_firstSnapshot){
+              // Just initialise the baseline — no sound on page load
+              _prevQueueIds = currentIds;
+              _firstSnapshot = false;
+            } else {
+              // Find any IDs that weren't there before
+              const newEntries = [...currentIds].filter(id => !_prevQueueIds.has(id));
+              if(newEntries.length > 0 && _adminSoundOn){
+                // Play the buzz sound for each new entry
+                // (slight delay between multiple simultaneous buzzes)
+                newEntries.forEach((_, i) => {
+                  setTimeout(() => playBuzzer('buzz'), i * 180);
+                });
+              }
+              _prevQueueIds = currentIds;
+            }
+          }
+          // ─────────────────────────────────────────────────────────────
+
+          if(_tab === 'queue'){
             let h = `<div class="content-hd">Live Queue — ${esc(sess.name)} [${esc(sess.code)}] — ${rows.length} waiting</div>`;
-            if (!rows.length) {
+            if(!rows.length){
               h += '<div class="content-empty">Queue is empty</div>';
             } else {
               h += '<div class="q-grid">' +
-                rows.map((e, i) => `
+                rows.map((e,i) => `
                   <div class="q-card">
                     <div class="q-num">#${i+1}</div>
                     <div class="q-name">${esc(e.name)}</div>
@@ -822,14 +672,14 @@ function loadContent() {
 
           } else {
             let h = `<div class="content-hd">History — ${esc(sess.name)} — ${rows.length} total</div>`;
-            if (!rows.length) {
+            if(!rows.length){
               h += '<div class="content-empty">No events yet</div>';
             } else {
               h += `<table class="h-table">
                 <thead><tr><th>#</th><th>Name</th><th>Date</th><th>Time</th><th>Status</th></tr></thead>
                 <tbody>` +
                 rows.map(e => `<tr>
-                  <td><span class="badge">${e.position || '?'}</span></td>
+                  <td><span class="badge">${e.position||'?'}</span></td>
                   <td style="color:var(--txt);font-weight:500">${esc(e.name)}</td>
                   <td style="color:var(--dim)">${fmtDate(e.buzzedAt)}</td>
                   <td style="color:var(--dim)">${fmtTime(e.buzzedAt)}</td>
@@ -842,15 +692,12 @@ function loadContent() {
             content.innerHTML = h;
           }
         },
-        err => {
-          content.innerHTML = `<div class="content-empty">⚠ ${esc(err.message)}</div>`;
-        }
+        err => { content.innerHTML = `<div class="content-empty">⚠ ${esc(err.message)}</div>`; }
       );
 
-    // Watch session doc so "End Session" button stays in sync
     addSub(
       db.collection('sessions').doc(sid).onSnapshot(sd => {
-        if (!sd.exists) return;
+        if(!sd.exists) return;
         document.getElementById('end-sess-btn').style.display =
           sd.data().active ? 'inline-block' : 'none';
       })
@@ -858,7 +705,7 @@ function loadContent() {
   });
 }
 
-function renderQR(sess, sid, content) {
+function renderQR(sess, sid, content){
   const url = location.origin + location.pathname + '?code=' + sess.code;
   content.innerHTML = `
     <div class="content-hd">QR Code — ${esc(sess.name)} [${esc(sess.code)}]</div>
@@ -868,199 +715,84 @@ function renderQR(sess, sid, content) {
       <div class="qr-hint">Participants only need to enter their name after scanning</div>
       <div class="qr-url">${esc(url)}</div>
     </div>`;
-  new QRCode(document.getElementById('qr-div'), {
+  new QRCode(document.getElementById('qr-div'),{
     text: url, width: 190, height: 190,
     colorDark: '#000', colorLight: '#fff',
     correctLevel: QRCode.CorrectLevel.H
   });
 }
 
-// Auto-close my sessions when tab closes or hides
 window.addEventListener('beforeunload', () => {
-  for (const id of _mySessions)
-    db.collection('sessions').doc(id).update({ active: false }).catch(() => {});
+  for(const id of _mySessions)
+    db.collection('sessions').doc(id).update({active: false}).catch(() => {});
 });
 document.addEventListener('visibilitychange', () => {
-  if (!sessionStorage.getItem('bz_auth')) return;
+  if(!sessionStorage.getItem('bz_auth')) return;
   const hiding = document.visibilityState === 'hidden';
-  for (const id of _mySessions)
-    db.collection('sessions').doc(id).update({ active: !hiding }).catch(() => {});
+  for(const id of _mySessions)
+    db.collection('sessions').doc(id).update({active: !hiding}).catch(() => {});
 });
 
-// ─────────────────────────────────────────────────
-// BUZZER SOUND  (Web Audio API — no file needed)
-// ─────────────────────────────────────────────────
-
-// AudioContext is created on first user gesture (browser requirement)
-let _audioCtx = null;
-
-function getAudioCtx() {
-  if (!_audioCtx) {
-    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  // Resume if suspended (happens on some mobile browsers)
-  if (_audioCtx.state === 'suspended') _audioCtx.resume();
-  return _audioCtx;
-}
-
-/*
-  playBuzzer(type)
-  ─────────────────
-  type = 'buzz'      → classic game-show buzz  (harsh, loud, attention-grabbing)
-  type = 'dismiss'   → short low blip          (played on admin side when dismissed)
-  type = 'join'      → soft confirmation chime  (played when joining session)
-
-  To change the sound: adjust the values below.
-  - frequency: pitch in Hz  (lower = deeper)
-  - duration:  seconds the sound lasts
-  - type:      waveform — 'sawtooth' | 'square' | 'sine' | 'triangle'
-*/
-function playBuzzer(kind = 'buzz') {
-  try {
-    const ctx = getAudioCtx();
-    const now = ctx.currentTime;
-
-    if (kind === 'buzz') {
-      // ── Classic game-show BUZZ ──────────────────
-      // Layer 1: main harsh tone
-      const osc1  = ctx.createOscillator();
-      const gain1 = ctx.createGain();
-      osc1.type            = 'sawtooth';
-      osc1.frequency.setValueAtTime(180, now);
-      osc1.frequency.linearRampToValueAtTime(120, now + 0.4);
-      gain1.gain.setValueAtTime(0.7, now);
-      gain1.gain.linearRampToValueAtTime(0, now + 0.45);
-      osc1.connect(gain1); gain1.connect(ctx.destination);
-      osc1.start(now); osc1.stop(now + 0.45);
-
-      // Layer 2: higher overtone for buzz character
-      const osc2  = ctx.createOscillator();
-      const gain2 = ctx.createGain();
-      osc2.type            = 'square';
-      osc2.frequency.setValueAtTime(360, now);
-      gain2.gain.setValueAtTime(0.3, now);
-      gain2.gain.linearRampToValueAtTime(0, now + 0.35);
-      osc2.connect(gain2); gain2.connect(ctx.destination);
-      osc2.start(now); osc2.stop(now + 0.35);
-
-      // Layer 3: noise burst at start (impact feel)
-      const bufSize   = ctx.sampleRate * 0.08;
-      const noiseBuffer = ctx.createBuffer(1, bufSize, ctx.sampleRate);
-      const data        = noiseBuffer.getChannelData(0);
-      for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
-      const noise = ctx.createBufferSource();
-      const ngain = ctx.createGain();
-      noise.buffer = noiseBuffer;
-      ngain.gain.setValueAtTime(0.4, now);
-      ngain.gain.linearRampToValueAtTime(0, now + 0.08);
-      noise.connect(ngain); ngain.connect(ctx.destination);
-      noise.start(now);
-
-    } else if (kind === 'dismiss') {
-      // ── Short low blip (dismissal on admin) ────
-      const osc  = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(300, now);
-      osc.frequency.linearRampToValueAtTime(150, now + 0.18);
-      gain.gain.setValueAtTime(0.4, now);
-      gain.gain.linearRampToValueAtTime(0, now + 0.2);
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.start(now); osc.stop(now + 0.2);
-
-    } else if (kind === 'join') {
-      // ── Soft two-tone confirmation chime ───────
-      [523, 659].forEach((freq, i) => {
-        const osc  = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.value = freq;
-        const t = now + i * 0.12;
-        gain.gain.setValueAtTime(0, t);
-        gain.gain.linearRampToValueAtTime(0.3, t + 0.02);
-        gain.gain.linearRampToValueAtTime(0, t + 0.15);
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.start(t); osc.stop(t + 0.15);
-      });
-    }
-  } catch (e) {
-    // Sound is non-critical — fail silently
-    console.warn('Audio error:', e);
-  }
-}
-
-// ─────────────────────────────────────────────────
-// AUDIENCE
-// ─────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════
+   AUDIENCE
+═══════════════════════════════════════════════ */
 const aud = {
   sess: null, name: '', entryId: null, buzzed: false,
-  qSub: null,   // queue watcher
-  sSub: null    // session watcher
+  qSub: null, sSub: null
 };
 
-function audErr(msg) {
+function audErr(msg){
   const el = document.getElementById('aud-err');
-  el.textContent = msg;
-  el.style.display = msg ? 'block' : 'none';
+  el.textContent = msg; el.style.display = msg ? 'block' : 'none';
 }
-function joinBtn(label, disabled) {
+function joinBtn(label, disabled){
   const b = document.getElementById('join-btn');
   b.textContent = label; b.disabled = disabled;
 }
 
-async function joinSession() {
+async function joinSession(){
   const name = document.getElementById('aud-name').value.trim();
   const code = document.getElementById('aud-code').value.trim().toUpperCase();
   audErr('');
-
-  if (!name) { audErr('Please enter your name.'); return; }
-  if (code.length !== 4) { audErr('Enter the 4-character session code.'); return; }
+  if(!name){ audErr('Please enter your name.'); return; }
+  if(code.length !== 4){ audErr('Enter the 4-character session code.'); return; }
   joinBtn('Checking…', true);
 
-  try {
-    // Search by code only (no .where active) so we can give a precise error
-    const snap = await db.collection('sessions').where('code', '==', code).get();
-
-    if (snap.empty) {
+  try{
+    const snap = await db.collection('sessions').where('code','==',code).get();
+    if(snap.empty){
       audErr(`No session found with code "${code}".`);
-      joinBtn('Join Session', false);
-      return;
+      joinBtn('Join Session', false); return;
     }
     const activeDocs = snap.docs.filter(d => d.data().active === true);
-    if (!activeDocs.length) {
+    if(!activeDocs.length){
       audErr(`Session "${code}" has been closed by the host.`);
-      joinBtn('Join Session', false);
-      return;
+      joinBtn('Join Session', false); return;
     }
 
-    // Joined!
-    playBuzzer('join');
-    aud.sess    = { id: activeDocs[0].id, ...activeDocs[0].data() };
-    aud.name    = name;
-    aud.buzzed  = false;
-    aud.entryId = null;
-
+    playBuzzer('join'); // chime on successful join
+    aud.sess    = {id: activeDocs[0].id, ...activeDocs[0].data()};
+    aud.name    = name; aud.buzzed = false; aud.entryId = null;
     document.getElementById('join-panel').style.display = 'none';
     document.getElementById('buzz-panel').style.display = 'flex';
     document.getElementById('buzz-sess-lbl').textContent = aud.sess.name + ' · ' + aud.sess.code;
     document.getElementById('sess-over').classList.remove('show');
     resetBuzzUI();
 
-    // Watch for session being closed by admin
-    if (aud.sSub) { try { aud.sSub(); } catch {} aud.sSub = null; }
+    if(aud.sSub){ try{ aud.sSub(); }catch{} aud.sSub = null; }
     aud.sSub = db.collection('sessions').doc(aud.sess.id).onSnapshot(sd => {
-      if (!sd.exists || !sd.data().active) {
+      if(!sd.exists || !sd.data().active){
         document.getElementById('sess-over').classList.add('show');
-        if (aud.qSub) { try { aud.qSub(); } catch {} aud.qSub = null; }
+        if(aud.qSub){ try{ aud.qSub(); }catch{} aud.qSub = null; }
         aud.buzzed = false; aud.entryId = null;
       }
     });
 
-  } catch (e) {
+  } catch(e){
     console.error('joinSession:', e);
-    if (e.code === 'permission-denied')
-      audErr('⚠ Permission denied — set Firestore rules to allow read/write.');
-    else if (e.code === 'unavailable')
+    if(e.code === 'permission-denied')
+      audErr('⚠ Permission denied — check Firestore rules.');
+    else if(e.code === 'unavailable')
       audErr('⚠ No internet connection.');
     else
       audErr('⚠ ' + e.message);
@@ -1068,129 +800,96 @@ async function joinSession() {
   }
 }
 
-function resetBuzzUI() {
+function resetBuzzUI(){
   const btn = document.getElementById('buzz-btn');
-  btn.className   = 'buzz-btn';
-  btn.textContent = 'BUZZ';
-  btn.disabled    = false;
+  btn.className = 'buzz-btn'; btn.textContent = 'BUZZ'; btn.disabled = false;
   document.getElementById('buzz-pos').style.display = 'none';
   const st = document.getElementById('buzz-status');
-  st.textContent = 'Ready · tap to buzz';
-  st.className   = 'buzz-status idle';
+  st.textContent = 'Ready · tap to buzz'; st.className = 'buzz-status idle';
 }
 
-async function doBuzz() {
-  if (aud.buzzed || !aud.sess) return;
+async function doBuzz(){
+  if(aud.buzzed || !aud.sess) return;
   const btn = document.getElementById('buzz-btn');
   btn.disabled = true; btn.textContent = '…';
 
-  try {
-    // Position = current queue size + 1
-    const qs  = await db.collection('queue').where('sessionId', '==', aud.sess.id).get();
+  try{
+    const qs  = await db.collection('queue').where('sessionId','==',aud.sess.id).get();
     const pos = qs.size + 1;
-
     const entry = {
-      sessionId: aud.sess.id,
-      name:      aud.name,
-      buzzedAt:  TS(),
-      position:  pos,
-      dismissed: false
+      sessionId: aud.sess.id, name: aud.name,
+      buzzedAt: TS(), position: pos, dismissed: false
     };
-
-    // Write, wait for confirmation before starting listener
     const ref = await db.collection('queue').add(entry);
     await db.collection('log').doc(ref.id).set(entry);
-
-    aud.entryId = ref.id;
-    aud.buzzed  = true;
+    aud.entryId = ref.id; aud.buzzed = true;
 
     // Update UI
-    btn.className   = 'buzz-btn fired';
-    btn.textContent = 'BUZZED!';
-    btn.disabled    = true;
+    btn.className = 'buzz-btn fired'; btn.textContent = 'BUZZED!'; btn.disabled = true;
     document.getElementById('buzz-pos').style.display = 'block';
     document.getElementById('buzz-pos-num').textContent = '#' + pos;
     const st = document.getElementById('buzz-status');
-    st.textContent = 'In queue — hold tight!';
-    st.className   = 'buzz-status waiting';
+    st.textContent = 'In queue — hold tight!'; st.className = 'buzz-status waiting';
 
-    // Buzz sound + flash effect
+    // Buzz sound + flash on audience device
     playBuzzer('buzz');
     const fl = document.createElement('div');
-    fl.className = 'flash';
-    document.body.appendChild(fl);
+    fl.className = 'flash'; document.body.appendChild(fl);
     setTimeout(() => fl.remove(), 520);
 
-    // Watch queue for position updates and dismissal
-    if (aud.qSub) { try { aud.qSub(); } catch {} aud.qSub = null; }
-    aud.qSub = db.collection('queue')
-      .where('sessionId', '==', aud.sess.id)
+    if(aud.qSub){ try{ aud.qSub(); }catch{} aud.qSub = null; }
+    aud.qSub = db.collection('queue').where('sessionId','==',aud.sess.id)
       .onSnapshot(snap => {
         const all = snap.docs
-          .map(d => ({ id: d.id, ...d.data() }))
-          .sort((a, b) => toMs(a.buzzedAt) - toMs(b.buzzedAt));
-
+          .map(d => ({id: d.id, ...d.data()}))
+          .sort((a,b) => toMs(a.buzzedAt) - toMs(b.buzzedAt));
         const mine = all.find(e => e.id === aud.entryId);
-
-        if (!mine) {
-          // Dismissed — stop listener, allow re-buzz after 2 s
-          if (aud.qSub) { try { aud.qSub(); } catch {} aud.qSub = null; }
+        if(!mine){
+          if(aud.qSub){ try{ aud.qSub(); }catch{} aud.qSub = null; }
           aud.buzzed = false; aud.entryId = null;
-          playBuzzer('dismiss');
-
-          btn.className   = 'buzz-btn dismissed';
-          btn.textContent = 'DISMISSED';
-          btn.disabled    = true;
+          playBuzzer('dismiss'); // blip on audience when dismissed
+          btn.className = 'buzz-btn dismissed'; btn.textContent = 'DISMISSED'; btn.disabled = true;
           document.getElementById('buzz-pos').style.display = 'none';
           const st = document.getElementById('buzz-status');
-          st.textContent = 'Dismissed — can buzz again shortly';
-          st.className   = 'buzz-status out';
+          st.textContent = 'Dismissed — can buzz again shortly'; st.className = 'buzz-status out';
           setTimeout(() => resetBuzzUI(), 2000);
           return;
         }
-
-        // Live position update
         document.getElementById('buzz-pos-num').textContent =
           '#' + (all.findIndex(e => e.id === aud.entryId) + 1);
-      },
-      err => console.error('queue watcher:', err));
+      }, err => console.error('queue watcher:', err));
 
-  } catch (e) {
+  } catch(e){
     console.error('doBuzz:', e);
     btn.disabled = false; btn.textContent = 'BUZZ'; btn.className = 'buzz-btn';
   }
 }
 
-function leaveSession() {
-  if (aud.qSub) { try { aud.qSub(); } catch {} aud.qSub = null; }
-  if (aud.sSub) { try { aud.sSub(); } catch {} aud.sSub = null; }
-  Object.assign(aud, { sess: null, name: '', entryId: null, buzzed: false, qSub: null, sSub: null });
+function leaveSession(){
+  if(aud.qSub){ try{ aud.qSub(); }catch{} aud.qSub = null; }
+  if(aud.sSub){ try{ aud.sSub(); }catch{} aud.sSub = null; }
+  Object.assign(aud, {sess:null, name:'', entryId:null, buzzed:false, qSub:null, sSub:null});
   document.getElementById('buzz-panel').style.display = 'none';
   document.getElementById('join-panel').style.display = 'block';
   document.getElementById('sess-over').classList.remove('show');
   document.getElementById('aud-code').value = '';
-  joinBtn('Join Session', false);
-  audErr('');
+  joinBtn('Join Session', false); audErr('');
 }
 
-// ─────────────────────────────────────────────────
-// BOOT  — decide which page to show
-// ─────────────────────────────────────────────────
-(function boot() {
-  const code = param('code'); // set by QR scan: ?code=XXXX
-
-  if (isMobile() || code) {
-    // Mobile or QR scan → audience view
+/* ═══════════════════════════════════════════════
+   BOOT
+═══════════════════════════════════════════════ */
+(function boot(){
+  const code = param('code');
+  if(isMobile() || code){
     showPage('audience');
-    if (code) {
+    if(code){
       document.getElementById('aud-code').value = code;
       setTimeout(() => document.getElementById('aud-name').focus(), 300);
     }
     return;
   }
-
-  // Desktop → check login
-  if (sessionStorage.getItem('bz_auth') === '1') {
+  if(sessionStorage.getItem('bz_auth') === '1'){
     showPage('admin');
   } else {
     showPage('login');
