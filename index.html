@@ -302,15 +302,12 @@ async function sha256(str){
 
    playBuzzer(kind)
    ─────────────────────────────────────────────
-   'buzz'    → harsh game-show buzz  (audience on BUZZ press, admin on receiving it)
-   'dismiss' → short low blip        (audience when dismissed)
-   'join'    → soft chime            (audience on joining session)
+   'buzz'    → punchy game-show buzz with reverb tail (~1.4s)
+   'dismiss' → smooth descending sweep with shimmer (~0.9s)
+   'join'    → warm three-note ascending fanfare (~0.8s)
 
-   Customise:
-     frequency  = pitch in Hz  (lower number = deeper sound)
-     gain       = volume 0–1
-     type       = 'sawtooth' | 'square' | 'sine' | 'triangle'
-     duration   = seconds (the last number in stop/ramp calls)
+   All sounds are longer, richer, and more polished than before.
+   Customise freely by tweaking frequency, gain, and duration values.
 ═══════════════════════════════════════════════ */
 let _audioCtx = null;
 
@@ -320,67 +317,202 @@ function getCtx(){
   return _audioCtx;
 }
 
+/* ── Helper: create a simple reverb convolver using an exponential noise IR ── */
+function makeReverb(ctx, duration = 1.2, decay = 3.0){
+  const sr   = ctx.sampleRate;
+  const len  = sr * duration;
+  const buf  = ctx.createBuffer(2, len, sr);
+  for(let ch = 0; ch < 2; ch++){
+    const d = buf.getChannelData(ch);
+    for(let i = 0; i < len; i++)
+      d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+  }
+  const conv = ctx.createConvolver();
+  conv.buffer = buf;
+  return conv;
+}
+
 function playBuzzer(kind = 'buzz'){
   try{
     const ctx = getCtx();
     const now = ctx.currentTime;
 
+    /* ── MASTER OUTPUT with gentle compression ── */
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -14;
+    comp.knee.value      = 6;
+    comp.ratio.value     = 4;
+    comp.attack.value    = 0.003;
+    comp.release.value   = 0.25;
+    comp.connect(ctx.destination);
+
     if(kind === 'buzz'){
-      // Layer 1 — main harsh tone, drops in pitch
+      /*
+       * Game-show BUZZ — three layered oscillators + noise + reverb tail
+       * Total duration: ~1.4 s
+       * Feel: authoritative, punchy, unmistakably "buzz"
+       */
+      const rev = makeReverb(ctx, 1.0, 4);
+      rev.connect(comp);
+
+      // Layer 1 — fundamental low saw, pitch sweep down
       const o1 = ctx.createOscillator(), g1 = ctx.createGain();
       o1.type = 'sawtooth';
-      o1.frequency.setValueAtTime(180, now);
-      o1.frequency.linearRampToValueAtTime(120, now + 0.4);
-      g1.gain.setValueAtTime(0.7, now);
-      g1.gain.linearRampToValueAtTime(0, now + 0.45);
-      o1.connect(g1); g1.connect(ctx.destination);
-      o1.start(now); o1.stop(now + 0.45);
+      o1.frequency.setValueAtTime(220, now);
+      o1.frequency.exponentialRampToValueAtTime(90, now + 0.55);
+      g1.gain.setValueAtTime(0, now);
+      g1.gain.linearRampToValueAtTime(0.65, now + 0.01);
+      g1.gain.setValueAtTime(0.65, now + 0.35);
+      g1.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+      o1.connect(g1); g1.connect(comp); g1.connect(rev);
+      o1.start(now); o1.stop(now + 1.05);
 
-      // Layer 2 — higher overtone for buzz character
+      // Layer 2 — mid square for crunch
       const o2 = ctx.createOscillator(), g2 = ctx.createGain();
       o2.type = 'square';
-      o2.frequency.setValueAtTime(360, now);
-      g2.gain.setValueAtTime(0.3, now);
-      g2.gain.linearRampToValueAtTime(0, now + 0.35);
-      o2.connect(g2); g2.connect(ctx.destination);
-      o2.start(now); o2.stop(now + 0.35);
+      o2.frequency.setValueAtTime(440, now);
+      o2.frequency.exponentialRampToValueAtTime(180, now + 0.4);
+      g2.gain.setValueAtTime(0, now);
+      g2.gain.linearRampToValueAtTime(0.28, now + 0.015);
+      g2.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+      o2.connect(g2); g2.connect(comp); g2.connect(rev);
+      o2.start(now); o2.stop(now + 0.7);
 
-      // Layer 3 — noise burst for impact feel
-      const bufSize = ctx.sampleRate * 0.08;
-      const nb = ctx.createBuffer(1, bufSize, ctx.sampleRate);
-      const nd = nb.getChannelData(0);
+      // Layer 3 — high harmonic shimmer (adds "electric" quality)
+      const o3 = ctx.createOscillator(), g3 = ctx.createGain();
+      o3.type = 'sawtooth';
+      o3.frequency.setValueAtTime(880, now);
+      o3.frequency.exponentialRampToValueAtTime(320, now + 0.3);
+      g3.gain.setValueAtTime(0, now);
+      g3.gain.linearRampToValueAtTime(0.12, now + 0.01);
+      g3.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      o3.connect(g3); g3.connect(rev);
+      o3.start(now); o3.stop(now + 0.45);
+
+      // Layer 4 — noise burst for hard transient click at impact
+      const bufSize = Math.floor(ctx.sampleRate * 0.06);
+      const nb  = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+      const nd  = nb.getChannelData(0);
       for(let i = 0; i < bufSize; i++) nd[i] = Math.random() * 2 - 1;
-      const ns = ctx.createBufferSource(), ng = ctx.createGain();
+      const ns  = ctx.createBufferSource(), ng = ctx.createGain();
       ns.buffer = nb;
-      ng.gain.setValueAtTime(0.4, now);
-      ng.gain.linearRampToValueAtTime(0, now + 0.08);
-      ns.connect(ng); ng.connect(ctx.destination);
+      ng.gain.setValueAtTime(0.55, now);
+      ng.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+      ns.connect(ng); ng.connect(comp);
       ns.start(now);
 
+      // Layer 5 — sub-bass thump (body)
+      const o5 = ctx.createOscillator(), g5 = ctx.createGain();
+      o5.type = 'sine';
+      o5.frequency.setValueAtTime(80, now);
+      o5.frequency.exponentialRampToValueAtTime(40, now + 0.25);
+      g5.gain.setValueAtTime(0, now);
+      g5.gain.linearRampToValueAtTime(0.5, now + 0.005);
+      g5.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      o5.connect(g5); g5.connect(comp);
+      o5.start(now); o5.stop(now + 0.38);
+
     } else if(kind === 'dismiss'){
-      // Short descending blip
-      const o = ctx.createOscillator(), g = ctx.createGain();
-      o.type = 'sine';
-      o.frequency.setValueAtTime(300, now);
-      o.frequency.linearRampToValueAtTime(150, now + 0.18);
-      g.gain.setValueAtTime(0.4, now);
-      g.gain.linearRampToValueAtTime(0, now + 0.2);
-      o.connect(g); g.connect(ctx.destination);
-      o.start(now); o.stop(now + 0.2);
+      /*
+       * DISMISS — smooth descending glide + soft shimmer
+       * Total duration: ~0.9 s
+       * Feel: calm, clear, polite "you're done"
+       */
+      const rev = makeReverb(ctx, 0.8, 5);
+      rev.connect(comp);
+
+      // Main tone — gentle sine sweep downward
+      const o1 = ctx.createOscillator(), g1 = ctx.createGain();
+      o1.type = 'sine';
+      o1.frequency.setValueAtTime(540, now);
+      o1.frequency.exponentialRampToValueAtTime(180, now + 0.55);
+      g1.gain.setValueAtTime(0, now);
+      g1.gain.linearRampToValueAtTime(0.45, now + 0.03);
+      g1.gain.setValueAtTime(0.45, now + 0.25);
+      g1.gain.exponentialRampToValueAtTime(0.001, now + 0.75);
+      o1.connect(g1); g1.connect(comp); g1.connect(rev);
+      o1.start(now); o1.stop(now + 0.8);
+
+      // Soft triangle overtone — adds warmth
+      const o2 = ctx.createOscillator(), g2 = ctx.createGain();
+      o2.type = 'triangle';
+      o2.frequency.setValueAtTime(810, now);
+      o2.frequency.exponentialRampToValueAtTime(270, now + 0.45);
+      g2.gain.setValueAtTime(0, now);
+      g2.gain.linearRampToValueAtTime(0.18, now + 0.04);
+      g2.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+      o2.connect(g2); g2.connect(rev);
+      o2.start(now); o2.stop(now + 0.6);
+
+      // Gentle noise tail — like a soft hiss at end
+      const bufSize2 = Math.floor(ctx.sampleRate * 0.18);
+      const nb2  = ctx.createBuffer(1, bufSize2, ctx.sampleRate);
+      const nd2  = nb2.getChannelData(0);
+      for(let i = 0; i < bufSize2; i++) nd2[i] = (Math.random() * 2 - 1) * 0.12;
+      const filt = ctx.createBiquadFilter();
+      filt.type = 'bandpass'; filt.frequency.value = 800; filt.Q.value = 1.5;
+      const ns2  = ctx.createBufferSource(), ng2 = ctx.createGain();
+      ns2.buffer = nb2;
+      ng2.gain.setValueAtTime(0.25, now + 0.3);
+      ng2.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
+      ns2.connect(filt); filt.connect(ng2); ng2.connect(rev);
+      ns2.start(now + 0.3);
 
     } else if(kind === 'join'){
-      // Two-tone soft confirmation chime
-      [523, 659].forEach((freq, i) => {
+      /*
+       * JOIN — warm three-note ascending fanfare (C E G triad)
+       * Total duration: ~0.85 s
+       * Feel: welcoming, bright, satisfying confirmation
+       */
+      const rev = makeReverb(ctx, 1.0, 6);
+      rev.connect(comp);
+
+      // Three-note arpeggio — C4, E4, G4 (major chord = positive)
+      const notes = [
+        { freq: 523.25, t: 0.00, dur: 0.42 },   // C5
+        { freq: 659.25, t: 0.14, dur: 0.38 },   // E5
+        { freq: 783.99, t: 0.28, dur: 0.55 },   // G5
+      ];
+
+      notes.forEach(({ freq, t, dur }) => {
+        // Sine fundamental
         const o = ctx.createOscillator(), g = ctx.createGain();
         o.type = 'sine'; o.frequency.value = freq;
-        const t = now + i * 0.12;
-        g.gain.setValueAtTime(0, t);
-        g.gain.linearRampToValueAtTime(0.3, t + 0.02);
-        g.gain.linearRampToValueAtTime(0, t + 0.15);
-        o.connect(g); g.connect(ctx.destination);
-        o.start(t); o.stop(t + 0.15);
+        const start = now + t;
+        g.gain.setValueAtTime(0, start);
+        g.gain.linearRampToValueAtTime(0.38, start + 0.018);
+        g.gain.setValueAtTime(0.38, start + dur * 0.55);
+        g.gain.exponentialRampToValueAtTime(0.001, start + dur);
+        o.connect(g); g.connect(comp); g.connect(rev);
+        o.start(start); o.stop(start + dur + 0.02);
+
+        // Triangle overtone for warmth
+        const o2 = ctx.createOscillator(), g2 = ctx.createGain();
+        o2.type = 'triangle'; o2.frequency.value = freq * 2;
+        g2.gain.setValueAtTime(0, start);
+        g2.gain.linearRampToValueAtTime(0.12, start + 0.02);
+        g2.gain.exponentialRampToValueAtTime(0.001, start + dur * 0.7);
+        o2.connect(g2); g2.connect(rev);
+        o2.start(start); o2.stop(start + dur);
+      });
+
+      // Gentle sparkle — high-freq noise burst on each note hit
+      [0, 0.14, 0.28].forEach(t => {
+        const bufS = Math.floor(ctx.sampleRate * 0.04);
+        const nb   = ctx.createBuffer(1, bufS, ctx.sampleRate);
+        const nd   = nb.getChannelData(0);
+        for(let i = 0; i < bufS; i++) nd[i] = Math.random() * 2 - 1;
+        const hpf = ctx.createBiquadFilter();
+        hpf.type = 'highpass'; hpf.frequency.value = 4000;
+        const ns = ctx.createBufferSource(), ng = ctx.createGain();
+        ns.buffer = nb;
+        ng.gain.setValueAtTime(0.08, now + t);
+        ng.gain.exponentialRampToValueAtTime(0.001, now + t + 0.04);
+        ns.connect(hpf); hpf.connect(ng); ng.connect(rev);
+        ns.start(now + t);
       });
     }
+
   } catch(e){
     console.warn('Audio error:', e); // non-critical, fail silently
   }
@@ -483,14 +615,13 @@ function doLock(){
 /* ═══════════════════════════════════════════════
    ADMIN SOUND TOGGLE
 ═══════════════════════════════════════════════ */
-let _adminSoundOn = true; // sound is ON by default
+let _adminSoundOn = true;
 
 function toggleAdminSound(){
   _adminSoundOn = !_adminSoundOn;
   const btn = document.getElementById('sound-toggle');
   btn.textContent = _adminSoundOn ? '🔊 Sound: ON' : '🔇 Sound: OFF';
   btn.classList.toggle('on', _adminSoundOn);
-  // Play a quick test beep when turning ON so admin knows it works
   if(_adminSoundOn) playBuzzer('join');
 }
 
@@ -501,7 +632,7 @@ let _subs     = [];
 let _contSub  = null;
 let _selId    = null;
 let _tab      = 'queue';
-let _prevQueueIds = new Set(); // tracks known queue entries so we detect NEW ones
+let _prevQueueIds = new Set();
 const _mySessions = new Set();
 
 function addSub(u){ if(u) _subs.push(u); }
@@ -551,7 +682,7 @@ function renderSessionList(list){
 
 function selectSession(id){
   _selId = id;
-  _prevQueueIds = new Set(); // reset when switching sessions
+  _prevQueueIds = new Set();
   document.querySelectorAll('.sess-item')
     .forEach(el => el.classList.toggle('sel', el.dataset.id === id));
   document.getElementById('tab-actions').style.display = 'flex';
@@ -614,12 +745,6 @@ function loadContent(){
     const col = _tab === 'queue' ? 'queue' : 'log';
     const dir = _tab === 'queue' ? 1 : -1;
 
-    // ── IMPORTANT: This is where admin hears the buzz sound ──────────────
-    // We watch the queue collection. Each time the snapshot fires we
-    // compare the current IDs to the previous ones. Any NEW id = someone
-    // just buzzed → play the buzz sound on the admin device.
-    // _prevQueueIds starts empty so the very first snapshot (loading
-    // existing entries) is treated as "baseline" — no sound on initial load.
     let _firstSnapshot = true;
 
     _contSub = db.collection(col).where('sessionId','==',sid)
@@ -629,20 +754,15 @@ function loadContent(){
             .map(d => ({id: d.id, ...d.data()}))
             .sort((a,b) => (toMs(a.buzzedAt) - toMs(b.buzzedAt)) * dir);
 
-          // ── Admin sound: detect new queue entries ─────────────────────
           if(_tab === 'queue'){
             const currentIds = new Set(snap.docs.map(d => d.id));
 
             if(_firstSnapshot){
-              // Just initialise the baseline — no sound on page load
               _prevQueueIds = currentIds;
               _firstSnapshot = false;
             } else {
-              // Find any IDs that weren't there before
               const newEntries = [...currentIds].filter(id => !_prevQueueIds.has(id));
               if(newEntries.length > 0 && _adminSoundOn){
-                // Play the buzz sound for each new entry
-                // (slight delay between multiple simultaneous buzzes)
                 newEntries.forEach((_, i) => {
                   setTimeout(() => playBuzzer('buzz'), i * 180);
                 });
@@ -650,7 +770,6 @@ function loadContent(){
               _prevQueueIds = currentIds;
             }
           }
-          // ─────────────────────────────────────────────────────────────
 
           if(_tab === 'queue'){
             let h = `<div class="content-hd">Live Queue — ${esc(sess.name)} [${esc(sess.code)}] — ${rows.length} waiting</div>`;
@@ -770,7 +889,7 @@ async function joinSession(){
       joinBtn('Join Session', false); return;
     }
 
-    playBuzzer('join'); // chime on successful join
+    playBuzzer('join');
     aud.sess    = {id: activeDocs[0].id, ...activeDocs[0].data()};
     aud.name    = name; aud.buzzed = false; aud.entryId = null;
     document.getElementById('join-panel').style.display = 'none';
@@ -824,14 +943,12 @@ async function doBuzz(){
     await db.collection('log').doc(ref.id).set(entry);
     aud.entryId = ref.id; aud.buzzed = true;
 
-    // Update UI
     btn.className = 'buzz-btn fired'; btn.textContent = 'BUZZED!'; btn.disabled = true;
     document.getElementById('buzz-pos').style.display = 'block';
     document.getElementById('buzz-pos-num').textContent = '#' + pos;
     const st = document.getElementById('buzz-status');
     st.textContent = 'In queue — hold tight!'; st.className = 'buzz-status waiting';
 
-    // Buzz sound + flash on audience device
     playBuzzer('buzz');
     const fl = document.createElement('div');
     fl.className = 'flash'; document.body.appendChild(fl);
@@ -847,7 +964,7 @@ async function doBuzz(){
         if(!mine){
           if(aud.qSub){ try{ aud.qSub(); }catch{} aud.qSub = null; }
           aud.buzzed = false; aud.entryId = null;
-          playBuzzer('dismiss'); // blip on audience when dismissed
+          playBuzzer('dismiss');
           btn.className = 'buzz-btn dismissed'; btn.textContent = 'DISMISSED'; btn.disabled = true;
           document.getElementById('buzz-pos').style.display = 'none';
           const st = document.getElementById('buzz-status');
